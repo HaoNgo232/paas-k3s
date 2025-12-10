@@ -1,0 +1,26 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches: [ "master" ]
+    paths:
+      - 'frontend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm install -g pnpm && pnpm install
+      
+    - name: Build
+      working-directory: ./frontend
+      run: pnpm build

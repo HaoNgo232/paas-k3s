@@ -1,0 +1,30 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [ "master" ]
+    paths:
+      - 'backend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Install dependencies
+      working-directory: ./backend
+      run: npm install -g pnpm && pnpm install
+      
+    - name: Build
+      working-directory: ./backend
+      run: pnpm build
+      
+    - name: Test
+      working-directory: ./backend
+      run: pnpm test
