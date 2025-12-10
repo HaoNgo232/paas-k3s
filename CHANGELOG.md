@@ -7,7 +7,31 @@ và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
-> Các tính năng đang phát triển, chưa release
+### Changed
+
+- **Frontend Structure**: Refactored to Feature-based Architecture.
+  - Moved `app` and `lib` to `src/`.
+  - Created standard folders: `features/`, `components/` (ui, layout, common), `hooks/`, `types/`, `styles/`.
+  - Updated `tsconfig.json` and `components.json` aliases.
+
+### Added
+
+- **Development Instructions**:
+  - Added comprehensive GitHub Copilot instructions (`.github/copilot-instructions.md`).
+  - Added Backend-specific instructions with NestJS patterns (`.github/instructions/backend.instructions.md`).
+  - Added Frontend-specific instructions with Next.js patterns (`.github/instructions/frontend.instructions.md`).
+- **Containerization**:
+  - Added `Dockerfile` for Backend (NestJS optimized build).
+  - Added `Dockerfile` for Frontend (Next.js standalone build).
+- **CI/CD**:
+  - Added GitHub Actions workflows: `frontend.yml` and `backend.yml`.
+- **Kubernetes Manifests**:
+  - Created `k8s/` directory.
+  - Added `namespace.yaml`, `frontend.yaml`, `backend.yaml`, `ingress.yaml`, `secrets.yaml.example`.
+- **Local Development**:
+  - Added `docker-compose.yml` for PostgreSQL.
+  - Added `.env.example` for both Frontend and Backend.
+- **License**: Added MIT License.
 
 ---
 
