@@ -1,0 +1,279 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==================== AUTH ====================
+
+model User {
+  id        String  @id @default(cuid())
+  email     String  @unique
+  name      String?
+  avatarUrl String?
+
+  // GitHub OAuth
+  githubId    String  @unique
+  githubToken String? // Encrypted, for API calls
+
+  // Role
+  role UserRole @default(USER)
+
+  // Service Tier
+  tier ServiceTier @default(FREE)
+
+  // Relations
+  spaces Space[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum UserRole {
+  USER // Normal user
+  ADMIN // Platform admin
+}
+
+enum ServiceTier {
+  FREE // 1 Space, 3 Projects, 5 Services
+  PRO // 5 Spaces, 10 Projects, 20 Services
+  TEAM // Unlimited (future)
+}
+
+// ==================== RESOURCE HIERARCHY ====================
+
+model Space {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique // K8s namespace name
+  description String?
+
+  // Owner
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Resource Quotas (K8s ResourceQuota)
+  cpuLimit     String @default("2") // Total CPU cores
+  memoryLimit  String @default("2Gi") // Total memory
+  storageLimit String @default("10Gi") // Total storage
+
+  // Relations
+  projects Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Project {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  // Parent
+  spaceId String
+  space   Space  @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  // Relations
+  services Service[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([spaceId])
+}
+
+model Service {
+  id          String  @id @default(cuid())
+  name        String
+  appName     String  @unique // K8s deployment name (auto-generated)
+  description String?
+
+  // Parent
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // ===== SOURCE CONFIGURATION =====
+  sourceType SourceType @default(DOCKER_IMAGE)
+
+  // For DOCKER_IMAGE
+  dockerImage String?
+
+  // For GITHUB_REPO (future)
+  repoUrl      String?
+  branch       String? @default("main")
+  buildCommand String?
+
+  // For SCAFFOLD (future)
+  templateId String?
+
+  // ===== RUNTIME CONFIGURATION =====
+  replicas Int     @default(1)
+  port     Int     @default(80)
+  command  String?
+  args     String?
+
+  // Resource Limits
+  cpuRequest    String @default("50m")
+  cpuLimit      String @default("200m")
+  memoryRequest String @default("64Mi")
+  memoryLimit   String @default("256Mi")
+
+  // ===== STATUS =====
+  status ServiceStatus @default(IDLE)
+
+  // ===== AUTO DEPLOY =====
+  webhookToken String  @default(cuid())
+  autoDeploy   Boolean @default(false)
+
+  // ===== SELF-CONFIGURATION (New!) =====
+  // Service gọi API để tự cấu hình
+  configToken String? @unique // Token để service tự gọi API
+
+  // Relations
+  envVars     EnvVar[]
+  domains     Domain[]
+  deployments Deployment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+enum SourceType {
+  DOCKER_IMAGE // Deploy từ image có sẵn
+  GITHUB_REPO // Build từ GitHub repo
+  SCAFFOLD // Tạo từ template
+}
+
+enum ServiceStatus {
+  IDLE // Chưa deploy
+  PENDING // Đang chờ deploy
+  DEPLOYING // Đang deploy
+  RUNNING // Đang chạy
+  STOPPED // Đã dừng
+  ERROR // Lỗi
+  SCALING // Đang scale
+}
+
+// ==================== SERVICE CONFIGURATION ====================
+
+model EnvVar {
+  id String @id @default(cuid())
+
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  key      String
+  value    String
+  isSecret Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([serviceId, key])
+  @@index([serviceId])
+}
+
+model Domain {
+  id String @id @default(cuid())
+
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  host String @unique // e.g., "app.example.com"
+  path String @default("/")
+
+  // SSL
+  https    Boolean  @default(true)
+  certType CertType @default(LETSENCRYPT)
+
+  // Status
+  isVerified Boolean @default(false)
+
+  createdAt DateTime @default(now())
+}
+
+enum CertType {
+  NONE
+  LETSENCRYPT
+  CUSTOM
+}
+
+// ==================== DEPLOYMENT HISTORY ====================
+
+model Deployment {
+  id String @id @default(cuid())
+
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  // Deployment info
+  title       String // "Manual deploy", "Auto: push to main"
+  description String?
+
+  // Image deployed
+  imageTag String
+  replicas Int
+
+  // Status
+  status DeploymentStatus @default(PENDING)
+
+  // Error info (if failed)
+  errorMessage String?
+
+  // Timing
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([serviceId])
+  @@index([createdAt])
+}
+
+enum DeploymentStatus {
+  PENDING
+  DEPLOYING
+  SUCCESS
+  FAILED
+  CANCELLED
+  ROLLED_BACK
+}
+
+// ==================== SCAFFOLD TEMPLATES (Future) ====================
+
+model Template {
+  id String @id @default(cuid())
+
+  name        String  @unique
+  description String?
+
+  // Template source
+  repoUrl String // GitHub repo URL
+  branch  String @default("main")
+
+  // Metadata
+  category String? // "web", "api", "fullstack"
+  tags     String[] // ["nextjs", "nodejs", "typescript"]
+
+  // Default config
+  defaultEnvVars Json? // { "NODE_ENV": "production" }
+  defaultPort    Int   @default(3000)
+
+  isPublic Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
