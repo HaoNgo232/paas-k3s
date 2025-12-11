@@ -19,7 +19,11 @@ và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **Hướng dẫn Development**:
   - Thêm GitHub Copilot instructions chi tiết (`.github/copilot-instructions.md`).
   - Thêm hướng dẫn Backend với NestJS patterns (`.github/instructions/backend.instructions.md`).
+    - **Thêm section Type Guard Pattern** với ví dụ chi tiết cho external data validation.
+    - **Thêm section Absolute Paths** nhấn mạnh việc dùng `@/*` thay vì relative paths.
   - Thêm hướng dẫn Frontend với Next.js patterns (`.github/instructions/frontend.instructions.md`).
+    - **Thêm section Type Guard Pattern** cho API response validation.
+    - **Thêm section Absolute Paths** với examples và best practices.
 - **Containerization**:
   - Thêm `Dockerfile` cho Backend (NestJS optimized build).
   - Thêm `Dockerfile` cho Frontend (Next.js standalone build).

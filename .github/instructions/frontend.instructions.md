@@ -328,6 +328,160 @@ export const storage = StorageFactory.createStorage();
 
 ---
 
+## Path Aliases - Bắt Buộc
+
+**LUÔN dùng absolute paths với `@/*` thay vì relative paths.**
+
+❌ **SAI (Relative paths):**
+
+```typescript
+import { httpClient } from "../../../lib/http";
+import { AuthService } from "../../auth/services/auth.service";
+import { Button } from "../../../components/ui/button";
+```
+
+✅ **ĐÚNG (Absolute paths):**
+
+```typescript
+import { httpClient } from "@/lib/http";
+import { AuthService } from "@/features/auth/services/auth.service";
+import { Button } from "@/components/ui/button";
+```
+
+**Lợi ích:**
+
+- Code dễ đọc hưn (biết ngay file ở đâu)
+- Dễ refactor (move files không bị break imports)
+- Autocomplete tốt hơn trong IDE
+
+**Available alias:**
+
+- `@/*` - src folder
+
+---
+
+## Type Guard Pattern - Bắt Buộc cho API Response
+
+**KHÔNG tin tưởng mù quáng vào API response structure.**
+
+❌ **SAI (Unsafe access):**
+
+```typescript
+// service
+async getMe(): Promise<User> {
+  const response = await this.http.get<ApiResponse<User>>(
+    API_ENDPOINTS.AUTH.ME,
+  );
+  return response.data.data; // ❌ Nếu API trả về null hoặc thiếu fields?
+}
+
+// component
+const { data: user } = useAuth();
+return <span>{user.name}</span>; // ❌ Runtime error nếu user undefined!
+```
+
+✅ **ĐÚNG (Type guard với runtime validation):**
+
+**Bước 1: Tạo Type Guard**
+
+```typescript
+// features/auth/types/guards.ts
+import { User } from "./index";
+
+/**
+ * Type Guard cho User
+ * Kiểm tra runtime để đảm bảo user có đầy đủ fields
+ */
+export function isUser(data: unknown): data is User {
+  if (typeof data !== "object" || data === null) {
+    return false;
+  }
+
+  const obj = data as Record<string, unknown>;
+
+  return (
+    typeof obj.id === "string" &&
+    typeof obj.email === "string" &&
+    (obj.name === null || typeof obj.name === "string") &&
+    typeof obj.role === "string"
+  );
+}
+
+/**
+ * Validate và cast user an toàn
+ * @throws ApiError nếu user không hợp lệ
+ */
+export function validateUser(data: unknown): User {
+  if (!isUser(data)) {
+    throw new ApiError("Invalid user data structure", 500, "INVALID_USER_DATA");
+  }
+  return data;
+}
+```
+
+**Bước 2: Dùng trong Service**
+
+```typescript
+// features/auth/services/auth.service.ts
+import { validateUser } from "../types/guards";
+
+export class AuthService {
+  async getMe(): Promise<User> {
+    const response = await this.http.get<ApiResponse<User>>(
+      API_ENDPOINTS.AUTH.ME,
+    );
+
+    if (!response.data.data) {
+      throw new ApiError(
+        "No user data returned from API",
+        500,
+        "USER_NOT_FOUND",
+      );
+    }
+
+    return validateUser(response.data.data); // ✅ Runtime validation!
+  }
+}
+```
+
+**Bước 3: Safe Access trong Component**
+
+```typescript
+// components
+function UserProfile() {
+  const { data: user, isLoading, error } = useAuth();
+
+  if (isLoading) return <Spinner />;
+  if (error) return <ErrorMessage error={error} />;
+  if (!user) return null; // ✅ Null check
+
+  // ✅ An toàn - TypeScript biết user không null
+  return (
+    <div>
+      <span>{user.name ?? "Anonymous"}</span>
+      <span>{user.email}</span>
+    </div>
+  );
+}
+```
+
+**Khi nào cần Type Guard:**
+
+- ✅ API response data
+- ✅ LocalStorage/Cookie data
+- ✅ External data từ props (nếu không chắc chắn)
+- ✅ Data từ third-party libraries
+- ❌ Internal component props (type-checked bởi TypeScript)
+
+**Lợi ích:**
+
+- **Runtime Safety**: Phát hiện invalid API response ngay lập tức
+- **Better UX**: Hiển thị error message thay vì crash app
+- **Type Safety**: TypeScript + runtime validation
+- **Debugging**: Dễ tìm nguyên nhân lỗi hơn
+
+---
+
 ## Form Handling Pattern
 
 ```typescript
@@ -365,14 +519,17 @@ export function CreateSpaceForm() {
 
 ## Checklist khi tạo Feature mới
 
-- [ ] Service class với static methods (API calls only)
+- [ ] Service class với instance methods (API calls only)
 - [ ] Hooks với React Query (useQuery + useMutation)
 - [ ] Store cho UI state (search, filters, không lưu server data)
 - [ ] Container component (connect hooks)
 - [ ] Presentational component (pure UI)
 - [ ] Add routes/endpoints/keys vào `lib/constants.ts`
+- [ ] **Dùng Type Guard cho API response data**
+- [ ] **Dùng absolute paths `@/*` thay vì relative paths**
 - [ ] Dùng `httpClient` và `storage` từ lib
-- [ ] Path aliases: `@/*`
+- [ ] Viết tests cho type guards (nếu có)
+- [ ] Kiểm tra TypeScript và ESLint pass
 
 ---
 

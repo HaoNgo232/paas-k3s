@@ -262,6 +262,145 @@ async createDeployment(namespace: string, config: DeploymentConfig) {
 
 ---
 
+## Path Aliases - Bắt Buộc
+
+**LUÔN dùng absolute paths với `@/*` thay vì relative paths.**
+
+❌ **SAI (Relative paths):**
+
+```typescript
+import { PrismaService } from "../../prisma/prisma.service";
+import { SpaceService } from "../space/space.service";
+import { CreateProjectDto } from "./dto/create-project.dto";
+```
+
+✅ **ĐÚNG (Absolute paths):**
+
+```typescript
+import { PrismaService } from "@prisma/prisma.service";
+import { SpaceService } from "@modules/space/space.service";
+import { CreateProjectDto } from "@modules/project/dto/create-project.dto";
+```
+
+**Lợi ích:**
+
+- Code dễ đọc hưn (biết ngay file ở đâu)
+- Dễ refactor (move files không bị break imports)
+- Autocomplete tốt hơn trong IDE
+
+**Available aliases:**
+
+- `@/*` - src folder
+- `@config/*` - src/config
+- `@modules/*` - src/modules
+- `@common/*` - src/common
+- `@kubernetes/*` - src/kubernetes
+- `@prisma/*` - src/prisma
+
+---
+
+## Type Guard Pattern - Bắt Buộc cho External Data
+
+**KHÔNG dùng type assertion (`as`) cho data từ ngoài (API, JWT, user input).**
+
+❌ **SAI (Unsafe type assertion):**
+
+```typescript
+async verify(token: string): Promise<JwtPayload> {
+  const { payload } = await jose.jwtVerify(token, this.secret);
+  return payload as JwtPayload; // ❌ Nguy hiểm! Không kiểm tra runtime
+}
+
+getCurrentUser(@Req() req: Request) {
+  const payload = req.user as JwtPayload; // ❌ Tin tưởng mù quáng!
+  return this.service.getUserFromToken(payload);
+}
+```
+
+✅ **ĐÚNG (Type guard với runtime validation):**
+
+**Bước 1: Tạo Type Guard**
+
+```typescript
+// guards/jwt-payload.guard.ts
+import { JwtPayload } from "@modules/auth/interfaces/jwt-payload.interface";
+
+/**
+ * Type Guard cho JwtPayload
+ * Kiểm tra runtime để đảm bảo payload có đầy đủ fields
+ */
+export function isJwtPayload(payload: unknown): payload is JwtPayload {
+  if (typeof payload !== "object" || payload === null) {
+    return false;
+  }
+
+  const obj = payload as Record<string, unknown>;
+
+  // Kiểm tra required fields
+  return (
+    typeof obj.sub === "string" &&
+    typeof obj.email === "string" &&
+    (obj.name === null || typeof obj.name === "string") &&
+    (obj.avatarUrl === null || typeof obj.avatarUrl === "string") &&
+    typeof obj.role === "string"
+  );
+}
+
+/**
+ * Validate và cast payload an toàn
+ * @throws Error nếu payload không hợp lệ
+ */
+export function validateJwtPayload(payload: unknown): JwtPayload {
+  if (!isJwtPayload(payload)) {
+    throw new Error(
+      "Invalid JWT payload structure: missing or invalid required fields",
+    );
+  }
+  return payload;
+}
+```
+
+**Bước 2: Dùng Type Guard**
+
+```typescript
+// jwt.service.ts
+import { validateJwtPayload } from '@modules/auth/guards/jwt-payload.guard';
+
+async verify(token: string): Promise<JwtPayload> {
+  const { payload } = await jose.jwtVerify(token, this.secret);
+  return validateJwtPayload(payload); // ✅ Runtime validation!
+}
+
+// auth.controller.ts
+import { validateJwtPayload } from '@modules/auth/guards/jwt-payload.guard';
+
+getCurrentUser(@Req() req: Request) {
+  if (!req.user) {
+    throw new UnauthorizedException('User not found');
+  }
+
+  const payload = validateJwtPayload(req.user); // ✅ Safe!
+  return this.service.getUserFromToken(payload);
+}
+```
+
+**Khi nào cần Type Guard:**
+
+- ✅ Data từ JWT token
+- ✅ Data từ external API
+- ✅ User input (sau khi validate với DTO)
+- ✅ Data từ database (nếu không chắc chắn structure)
+- ❌ Internal data (service → service) - không cần
+
+**Lợi ích:**
+
+- **Runtime Safety**: Phát hiện invalid data structure ngay lập tức
+- **Early Error Detection**: Fail fast với clear error message
+- **Type Safety**: TypeScript + runtime validation
+- **Bug Prevention**: Phát hiện bug trong test cases
+
+---
+
 ## Path Aliases
 
 Luôn dùng `@/*` thay vì relative paths:
@@ -282,4 +421,7 @@ import { SpaceNotFoundException } from "./exceptions";
 - [ ] Dùng custom exceptions, không dùng generic Error
 - [ ] DTO validate input với class-validator
 - [ ] Response format: `{ data, message? }`
-- [ ] Dùng path aliases `@/*`
+- [ ] **Dùng Type Guard cho external data (JWT, API response, user input)**
+- [ ] **Dùng absolute paths `@/*` thay vì relative paths**
+- [ ] Viết tests cho type guards (nếu có)
+- [ ] Kiểm tra lint và tests pass
