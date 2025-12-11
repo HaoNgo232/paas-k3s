@@ -56,12 +56,14 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 src/modules/auth/
 ├── auth.controller.ts      # Endpoints
 ├── auth.module.ts          # Định nghĩa Module
-├── auth.service.ts         # Logic nghiệp vụ (dùng jose SignJWT)
+├── auth.service.ts         # Logic nghiệp vụ (validateUser)
+├── services/
+│   └── jwt.service.ts      # Wrapper cho thư viện jose (sign/verify)
 ├── dto/
 │   └── auth.dto.ts
 ├── guards/
 │   ├── github-auth.guard.ts
-│   └── jwt-auth.guard.ts   # Custom guard dùng jose jwtVerify
+│   └── jwt-auth.guard.ts   # Custom guard dùng JwtService
 ├── strategies/
 │   └── github.strategy.ts
 └── interfaces/
@@ -109,41 +111,83 @@ async validate(accessToken: string, refreshToken: string, profile: any, done: Ve
 }
 ```
 
-### Backend: AuthService với jose
+### Backend: JwtService (Wrapper cho jose)
 
-Sử dụng `jose` để ký token.
+Tạo service riêng để xử lý logic JWT, giúp code sạch và dễ test hơn.
 
 ```typescript
-import { SignJWT } from 'jose';
+import { Injectable, Inject } from "@nestjs/common";
+import { ConfigType } from "@nestjs/config";
+import * as jose from "jose";
+import authConfig from "@config/auth.config";
 
-// ...
-async login(user: any) {
-  const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-  const token = await new SignJWT({ sub: user.id, email: user.email })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime(process.env.JWT_EXPIRES_IN)
-    .sign(secret);
-  return { accessToken: token };
+@Injectable()
+export class JwtService {
+  private secret: Uint8Array;
+
+  constructor(
+    @Inject(authConfig.KEY)
+    private config: ConfigType<typeof authConfig>,
+  ) {
+    this.secret = new TextEncoder().encode(this.config.jwtSecret);
+  }
+
+  async sign(payload: any): Promise<string> {
+    return new jose.SignJWT(payload)
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime(this.config.jwtExpiresIn)
+      .sign(this.secret);
+  }
+
+  async verify(token: string): Promise<any> {
+    const { payload } = await jose.jwtVerify(token, this.secret);
+    return payload;
+  }
 }
 ```
 
-### Backend: JwtAuthGuard với jose
+### Backend: AuthService
 
-Tự triển khai Guard để verify token.
+Sử dụng `JwtService` để ký token thay vì gọi trực tiếp `jose`.
 
 ```typescript
-import { jwtVerify } from "jose";
+@Injectable()
+export class AuthService {
+  constructor(private jwtService: JwtService) // ... other services
+  {}
 
-// ... canActivate logic
-const token = this.extractTokenFromHeader(request);
-if (!token) throw new UnauthorizedException();
-try {
-  const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-  const { payload } = await jwtVerify(token, secret);
-  request["user"] = payload;
-} catch {
-  throw new UnauthorizedException();
+  async login(user: any) {
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    const accessToken = await this.jwtService.sign(payload);
+    return { accessToken };
+  }
+}
+```
+
+### Backend: JwtAuthGuard
+
+Sử dụng `JwtService` để verify token.
+
+```typescript
+@Injectable()
+export class JwtAuthGuard implements CanActivate {
+  constructor(private jwtService: JwtService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const token = this.extractTokenFromHeader(request);
+    if (!token) throw new UnauthorizedException();
+
+    try {
+      const payload = await this.jwtService.verify(token);
+      request["user"] = payload;
+    } catch {
+      throw new UnauthorizedException();
+    }
+    return true;
+  }
+  // ... extractTokenFromHeader implementation
 }
 ```
 

@@ -29,5 +29,7 @@
       "@kubernetes/*": ["kubernetes/*"],
       "@prisma/*": ["prisma/*"]
     }
-  }
+  },
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist", "generated"]
 }
