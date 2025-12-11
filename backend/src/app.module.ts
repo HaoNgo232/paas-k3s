@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { configs } from './config';
-import { validationSchema } from './config/validation.schema';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { configs } from '@config/index';
+import { validationSchema } from '@config/validation.schema';
+import { AppController } from '@/app.controller';
+import { AppService } from '@/app.service';
 
 const ENV = process.env.NODE_ENV;
 
@@ -11,7 +11,7 @@ const ENV = process.env.NODE_ENV;
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: !ENV ? '.env.development' : `.env.${ENV}`,
+      envFilePath: ENV ? `.env.${ENV}` : '.env.development',
       load: configs,
       cache: true,
       expandVariables: true,

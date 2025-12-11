@@ -5,6 +5,14 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "_moduleAliases": {
+    "@": "dist",
+    "@config": "dist/config",
+    "@modules": "dist/modules",
+    "@common": "dist/common",
+    "@kubernetes": "dist/kubernetes",
+    "@prisma": "dist/prisma"
+  },
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -26,6 +34,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@prisma/client": "7.0.0",
     "joi": "^18.0.2",
+    "module-alias": "^2.2.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
@@ -37,6 +46,7 @@
     "@nestjs/testing": "^11.0.1",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
+    "@types/module-alias": "^2.0.4",
     "@types/node": "^22.10.7",
     "@types/supertest": "^6.0.2",
     "cross-env": "^10.1.0",
@@ -71,6 +81,14 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1",
+      "^@config/(.*)$": "<rootDir>/config/$1",
+      "^@modules/(.*)$": "<rootDir>/modules/$1",
+      "^@common/(.*)$": "<rootDir>/common/$1",
+      "^@kubernetes/(.*)$": "<rootDir>/kubernetes/$1",
+      "^@prisma/(.*)$": "<rootDir>/prisma/$1"
+    }
   }
 }

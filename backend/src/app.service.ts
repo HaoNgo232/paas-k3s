@@ -1,16 +1,17 @@
+import type { ConfigType } from '@nestjs/config';
 import { Injectable, Inject } from '@nestjs/common';
-import { ConfigService, type ConfigType } from '@nestjs/config';
-import appConfig from './config/app.config';
-import authConfig from './config/auth.config';
+import { ConfigService } from '@nestjs/config';
+import appConfig from '@config/app.config';
+import authConfig from '@config/auth.config';
 
 @Injectable()
 export class AppService {
   constructor(
     @Inject(appConfig.KEY)
-    private app: ConfigType<typeof appConfig>,
+    private readonly app: ConfigType<typeof appConfig>,
     @Inject(authConfig.KEY)
-    private auth: ConfigType<typeof authConfig>,
-    private configService: ConfigService,
+    private readonly auth: ConfigType<typeof authConfig>,
+    private readonly configService: ConfigService,
   ) {}
 
   getHello(): string {

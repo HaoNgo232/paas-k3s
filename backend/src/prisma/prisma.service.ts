@@ -1,6 +1,6 @@
-import { type ConfigType } from '@nestjs/config';
+import type { ConfigType } from '@nestjs/config';
 import { Injectable, Inject } from '@nestjs/common';
-import databaseConfig from '../config/database.config';
+import databaseConfig from '@config/database.config';
 
 @Injectable()
 export class PrismaService {
