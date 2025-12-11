@@ -8,6 +8,7 @@ import {
   User,
   UserRole,
   ServiceTier,
+  isUserRole,
 } from '@modules/auth/interfaces/user.interface';
 
 /**
@@ -71,12 +72,15 @@ export class AuthService {
    * @returns Thông tin người dùng để trả về cho client
    */
   getUserFromToken(payload: JwtPayload): UserProfileDto {
+    // Validate role safely - fallback to USER if invalid
+    const role = isUserRole(payload.role) ? payload.role : UserRole.USER;
+    
     const plainUser = {
       id: payload.sub,
       email: payload.email,
       name: payload.name,
       avatarUrl: payload.avatarUrl,
-      role: payload.role as UserRole,
+      role: role,
       tier: ServiceTier.FREE, // TODO: Fetch from DB khi có user module
     };
 

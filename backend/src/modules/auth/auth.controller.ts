@@ -14,8 +14,9 @@ import { AuthService } from '@modules/auth/services/auth.service';
 import { JwtAuthGuard } from '@modules/auth/guards/jwt-auth.guard';
 import { validateJwtPayload } from '@modules/auth/guards/jwt-payload.guard';
 import { UserProfileDto } from '@modules/auth/dto/auth.dto';
-import type { User } from '@modules/auth/interfaces/user.interface';
+import { isUser, type User } from '@modules/auth/interfaces/user.interface';
 import { FRONTEND_ROUTES, buildRedirectUrl } from '@common/constants';
+import { ResponseWrapper } from '@common/interfaces/api-response.interface';
 
 /**
  * Auth Controller
@@ -50,11 +51,11 @@ export class AuthController {
     @Res() res: Response,
   ): Promise<void> {
     try {
-      // req.user được đặt bởi GithubStrategy
-      const user = req.user as User;
-      if (!user) {
+      // req.user được đặt bởi GithubStrategy - validate with type guard
+      if (!isUser(req.user)) {
         throw new UnauthorizedException('User not found from GitHub');
       }
+      const user = req.user;
 
       // Đăng nhập người dùng và lấy JWT token
       const loginResponse = await this.authService.login(user);
@@ -90,14 +91,13 @@ export class AuthController {
    */
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  getCurrentUser(@Req() req: Request): { data: UserProfileDto } {
+  getCurrentUser(@Req() req: Request): UserProfileDto {
     if (!req.user) {
       throw new UnauthorizedException('User not found');
     }
 
     const payload = validateJwtPayload(req.user);
-    const user = this.authService.getUserFromToken(payload);
-    return { data: user };
+    return this.authService.getUserFromToken(payload);
   }
 
   /**
@@ -109,7 +109,7 @@ export class AuthController {
    */
   @Post('logout')
   @UseGuards(JwtAuthGuard)
-  logout(@Req() req: Request): { data: null; message: string } {
+  logout(@Req() req: Request) {
     if (!req.user) {
       throw new UnauthorizedException('User not found');
     }
@@ -118,9 +118,6 @@ export class AuthController {
     // Gọi service để xử lý logout logic (hiện tại chỉ log)
     this.authService.logout(payload);
 
-    return {
-      data: null,
-      message: 'Logged out successfully',
-    };
+    return ResponseWrapper.noContent('Logged out successfully');
   }
 }

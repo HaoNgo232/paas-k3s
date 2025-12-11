@@ -4,6 +4,32 @@ export { UserRole, ServiceTier };
 export type { User };
 
 /**
+ * Type Guard cho UserRole validation
+ * Prevents runtime errors when casting string to UserRole enum
+ */
+export function isUserRole(value: unknown): value is UserRole {
+  return typeof value === 'string' && Object.values(UserRole).includes(value as UserRole);
+}
+
+/**
+ * Type Guard cho User object validation
+ * Safer alternative to direct casting req.user as User
+ */
+export function isUser(value: unknown): value is User {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const obj = value as Record<string, unknown>;
+  return (
+    typeof obj.id === 'string' &&
+    typeof obj.email === 'string' &&
+    typeof obj.githubId === 'string' &&
+    isUserRole(obj.role)
+  );
+}
+
+/**
  * GitHub Profile Interface
  * Định nghĩa cấu trúc profile từ GitHub OAuth callback
  *

@@ -4,17 +4,17 @@ import { User, ApiResponse } from "../types";
 import { API_ENDPOINTS } from "@/lib/constants";
 
 /**
- * Auth Service Class
- * Domain logic cho authentication operations
- * Sử dụng Constructor Injection Pattern
+ * Lớp dịch vụ xác thực (Auth Service Class)
+ * Chứa logic nghiệp vụ cho các hoạt động xác thực (authentication operations)
+ * Sử dụng mô hình Khởi tạo thông qua Dependency Injection (Constructor Injection Pattern)
  */
 export class AuthService {
   constructor(private readonly http: HttpClient) {}
 
   /**
    * Lấy thông tin người dùng hiện tại
-   * @returns User profile
-   * @throws ApiError khi API call thất bại
+   * @returns Hồ sơ người dùng (User profile)
+   * @throws ApiError khi lệnh gọi API (API call) thất bại
    */
   async getMe(): Promise<User> {
     try {
@@ -45,19 +45,19 @@ export class AuthService {
 
   /**
    * Đăng xuất khỏi hệ thống
-   * Non-blocking: Nếu API fail, client vẫn clear state
+   * Không chặn (Non-blocking): Nếu API gặp lỗi (fail), client vẫn sẽ xóa trạng thái (clear state)
    */
   async logout(): Promise<void> {
     try {
       await this.http.post<ApiResponse<null>>(API_ENDPOINTS.AUTH.LOGOUT);
     } catch {
-      // Ignore error - client sẽ clear local state dù sao
-      // TODO: Implement proper error logging service
+      // Bỏ qua lỗi - client sẽ xóa trạng thái cục bộ (local state) dù sao đi nữa
+      // TODO: Triển khai dịch vụ ghi log lỗi (error logging service) phù hợp
     }
   }
 
   /**
-   * Validate user data structure
+   * Xác thực cấu trúc dữ liệu người dùng (Validate user data structure)
    * @private
    */
   private validateUser(user: User): User {
@@ -72,33 +72,31 @@ export class AuthService {
   }
 
   /**
-   * Check if token is valid (basic validation)
+   * Kiểm tra xem token có hợp lệ không (xác thực cơ bản)
    * @param token JWT token
    * @returns boolean
    */
   isTokenValid(token: string): boolean {
     if (!token || token.trim() === "") return false;
 
-    // Basic JWT structure validation (header.payload.signature)
+    // Xác thực cấu trúc cơ bản của JWT (header.payload.signature)
     const parts = token.split(".");
     if (parts.length !== 3) return false;
 
     try {
-      // Decode payload to check expiration
-      // Use decodeURIComponent + escape for Unicode-safe base64 decode
+      // Giải mã payload để kiểm tra thời hạn sử dụng bằng API TextDecoder hiện đại
       const base64Url = parts[1];
       const base64 = base64Url.replaceAll("-", "+").replaceAll("_", "/");
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split("")
-          .map((c) => "%" + ("00" + c.codePointAt(0)!.toString(16)).slice(-2))
-          .join(""),
-      );
+
+      // Chuyển đổi base64 sang byte rồi giải mã thành chuỗi UTF-8
+      const binaryString = atob(base64);
+      const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0));
+      const jsonPayload = new TextDecoder().decode(bytes);
 
       const payload = JSON.parse(jsonPayload);
-      if (!payload.exp) return true; // No expiration claim
+      if (!payload.exp) return true; // Không có tuyên bố hết hạn (expiration claim)
 
-      const expirationTime = payload.exp * 1000; // Convert to milliseconds
+      const expirationTime = payload.exp * 1000; // Chuyển đổi sang mili giây
       return Date.now() < expirationTime;
     } catch {
       return false;
@@ -106,5 +104,5 @@ export class AuthService {
   }
 }
 
-// Export singleton instance với httpClient được inject
+// Xuất phiên bản singleton với httpClient được inject
 export const authService = new AuthService(httpClient);

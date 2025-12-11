@@ -7,6 +7,23 @@ và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- **UI/UX Design System**:
+  - Tạo tài liệu hướng dẫn thiết kế (`docs/design/UI_UX_Guidelines.md`).
+  - Triển khai "Deep Space Glass" theme - Dark mode chuyên nghiệp cho developer platform.
+  - Bảng màu chuẩn hóa: Primary (Indigo), Secondary (Cyan), Status colors (Emerald/Amber/Rose).
+  - Typography system: Inter (UI) + JetBrains Mono (Code/Logs).
+  - Component specs: Service Card, Command Center Dashboard, Hacker Terminal, Navigation Sidebar.
+- **Backend API Response Standards**:
+  - Thêm `TransformInterceptor` để tự động wrap tất cả controller responses thành format chuẩn `{ data: T, statusCode: number }`.
+  - Thêm `ApiResponse<T>` và `ResponseWrapper` interfaces (`common/interfaces/api-response.interface.ts`).
+  - Tạo tài liệu API Response Standards (`backend/docs/API_RESPONSE_STANDARDS.md`).
+  - Thêm test helpers (`common/utils/test-helpers.util.ts`) để validate response format.
+- **Vietnamese Translations**:
+  - Dịch comments trong `frontend/src/features/auth/services/auth.service.ts`.
+  - Dịch comments trong `frontend/src/lib/http/axios-client.ts`.
+
 ### Changed
 
 - **Cấu trúc Frontend**: Tái cấu trúc thành Feature-based Architecture.

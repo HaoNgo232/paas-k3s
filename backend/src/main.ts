@@ -17,6 +17,7 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from '@/app.module';
+import { TransformInterceptor } from '@common/interceptors/transform.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -47,6 +48,9 @@ async function bootstrap() {
 
   // Kích hoạt ClassSerializerInterceptor toàn cục để áp dụng @Exclude/@Expose cho response
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+
+  // Tự động wrap tất cả controller responses thành { data: T, statusCode: number }
+  app.useGlobalInterceptors(new TransformInterceptor());
 
   await app.listen(process.env.PORT ?? 3001);
   console.log('Application is running on port:', process.env.PORT ?? 3001);

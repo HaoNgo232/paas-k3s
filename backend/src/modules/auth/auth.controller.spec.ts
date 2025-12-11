@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException, ExecutionContext } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
+import { ResponseWrapper } from '@common/interfaces/api-response.interface';
 import { AuthService } from './services/auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UserProfileDto } from './dto/auth.dto';
@@ -273,7 +274,8 @@ describe('AuthController', () => {
       expect(mockAuthService.getUserFromToken).toHaveBeenCalledWith(
         mockJwtPayload,
       );
-      expect(result).toEqual({ data: mockUserProfile });
+      // ✅ Controller now returns raw data - TransformInterceptor will wrap it
+      expect(result).toEqual(mockUserProfile);
     });
 
     it('should throw UnauthorizedException when user is missing', () => {
@@ -313,8 +315,8 @@ describe('AuthController', () => {
 
       const result = controller.getCurrentUser(mockRequest as Request);
 
-      expect(result.data.role).toBe(UserRole.ADMIN);
-      expect(result).toEqual({ data: adminProfile });
+      expect(result.role).toBe(UserRole.ADMIN);
+      expect(result).toEqual(adminProfile);
     });
 
     it('should call getUserFromToken with correct payload structure', () => {
@@ -365,10 +367,10 @@ describe('AuthController', () => {
     it('should return success message', () => {
       const result = controller.logout(mockRequest as Request);
 
-      expect(result).toEqual({
-        data: null,
-        message: 'Logged out successfully',
-      });
+      // ✅ Controller now returns ResponseWrapper - TransformInterceptor will handle final format
+      expect(result).toBeInstanceOf(ResponseWrapper);
+      expect(result.data).toBeNull();
+      expect(result.message).toBe('Logged out successfully');
     });
 
     it('should call authService.logout with payload', () => {

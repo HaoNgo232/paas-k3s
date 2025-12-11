@@ -25,6 +25,39 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## 🚨 API Response Standard - READ FIRST
+
+**CRITICAL FOR FRONTEND INTEGRATION:**
+
+All API endpoints automatically return standardized JSON format:
+```json
+{
+  "data": { ... },       // Your controller return value
+  "statusCode": 200,     // HTTP status (auto-added)
+  "message": "...",      // Optional (use ResponseWrapper)
+  "meta": { ... }        // Optional pagination (use ResponseWrapper)
+}
+```
+
+### How to Write Controllers:
+
+✅ **DO**: Just return your data directly
+```typescript
+@Get(':id')
+async getUser(@Param('id') id: string): Promise<User> {
+  return this.usersService.findOne(id); // Auto-wrapped by TransformInterceptor
+}
+```
+
+❌ **DON'T**: Manual wrapping (unnecessary)
+```typescript
+return { data: user }; // TransformInterceptor already does this
+```
+
+📖 **Full Documentation**: `backend/docs/API_RESPONSE_STANDARDS.md`
+
+**Why this matters:** Frontend expects exact structure. Wrong format = Runtime errors.
+
 ## Project setup
 
 ```bash

@@ -19,7 +19,11 @@ export class AppService {
   }
 
   getDatabaseUrl(): string {
-    return this.configService.get<string>('database.url')!;
+    const url = this.configService.get<string>('database.url');
+    if (!url) {
+      throw new Error('DATABASE_URL environment variable is not configured');
+    }
+    return url;
   }
 
   getAppPort(): number {
@@ -27,6 +31,9 @@ export class AppService {
   }
 
   getJwtSecret(): string {
-    return this.auth.jwtSecret!;
+    if (!this.auth.jwtSecret) {
+      throw new Error('JWT_SECRET environment variable is not configured');
+    }
+    return this.auth.jwtSecret;
   }
 }

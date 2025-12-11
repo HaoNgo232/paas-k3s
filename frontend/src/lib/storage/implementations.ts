@@ -8,7 +8,7 @@ import { IStorage, StorageOptions } from "@/lib/storage/storage.interface";
 export class CookieStorage implements IStorage {
   getItem(key: string): string | null {
     if (!globalThis.window) return null;
-    return Cookies.get(key) || null;
+    return Cookies.get(key) ?? null;
   }
 
   setItem(key: string, value: string, options?: StorageOptions): void {

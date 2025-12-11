@@ -8,7 +8,7 @@ import {
 import { ApiError } from "@/lib/http/errors";
 
 /**
- * Backend Error Response Structure
+ * Cấu trúc phản hồi lỗi từ Backend
  */
 interface BackendErrorResponse {
   message?: string;
@@ -19,8 +19,20 @@ interface BackendErrorResponse {
 }
 
 /**
- * Axios-based HTTP Client Implementation
- * Implements HttpClient interface với Axios
+ * Type guard để xác thực cấu trúc BackendErrorResponse.
+ * Ngăn ngừa lỗi runtime khi backend trả về định dạng lỗi không mong muốn.
+ */
+function isBackendErrorResponse(data: unknown): data is BackendErrorResponse {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    !Array.isArray(data)
+  );
+}
+
+/**
+ * Triển khai HTTP Client dựa trên Axios.
+ * Thực thi interface HttpClient với Axios.
  */
 export class AxiosHttpClient implements HttpClient {
   private readonly axiosInstance: AxiosInstance;
@@ -41,7 +53,7 @@ export class AxiosHttpClient implements HttpClient {
   }
 
   private setupInterceptors(): void {
-    // Request interceptor
+    // Bộ chặn (interceptor) request
     this.axiosInstance.interceptors.request.use(
       (config) => {
         if (this.authToken && config.headers) {
@@ -52,7 +64,7 @@ export class AxiosHttpClient implements HttpClient {
       (error) => Promise.reject(this.handleError(error)),
     );
 
-    // Response interceptor
+    // Bộ chặn (interceptor) response
     this.axiosInstance.interceptors.response.use(
       (response) => response,
       (error) => Promise.reject(this.handleError(error)),
@@ -61,13 +73,23 @@ export class AxiosHttpClient implements HttpClient {
 
   private handleError(error: unknown): ApiError {
     if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError<BackendErrorResponse>;
-      const errorData = axiosError.response?.data;
+      const errorData = error.response?.data;
 
+      // Xác thực an toàn cấu trúc phản hồi lỗi
+      if (isBackendErrorResponse(errorData)) {
+        return new ApiError(
+          errorData.message || error.message,
+          error.response?.status || 500,
+          errorData.code || "UNKNOWN_ERROR",
+          errorData,
+        );
+      }
+
+      // Phương án dự phòng cho các phản hồi lỗi không chuẩn (HTML, văn bản thuần, v.v.)
       return new ApiError(
-        errorData?.message || axiosError.message,
-        axiosError.response?.status || 500,
-        errorData?.code || "UNKNOWN_ERROR",
+        error.message,
+        error.response?.status || 500,
+        "UNKNOWN_ERROR",
         errorData,
       );
     }
