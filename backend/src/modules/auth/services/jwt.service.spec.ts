@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
 import * as jose from 'jose';
-import { JwtService } from './jwt.service';
 import authConfig from '@config/auth.config';
-import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { JwtService } from '@/modules/auth/services/jwt.service';
+import { JwtPayload } from '@/modules/auth/interfaces/jwt-payload.interface';
 
 // Mock jose library
 jest.mock('jose');
@@ -14,6 +14,8 @@ describe('JwtService', () => {
   const mockPayload: JwtPayload = {
     sub: 'user-123',
     email: 'test@example.com',
+    name: 'Test User',
+    avatarUrl: 'https://example.com/avatar.jpg',
     role: 'USER',
   };
 
@@ -66,8 +68,10 @@ describe('JwtService', () => {
 
     it('should embed custom data in payload', async () => {
       const customPayload: JwtPayload = {
-        sub: 'admin-456',
-        email: 'admin@example.com',
+        sub: 'custom-user',
+        email: 'custom@example.com',
+        name: 'Custom User',
+        avatarUrl: 'https://example.com/custom.jpg',
         role: 'ADMIN',
       };
 
@@ -235,9 +239,27 @@ describe('JwtService', () => {
     it('should handle multiple sequential operations', async () => {
       const mockTokens = ['token1', 'token2', 'token3'];
       const payloads = [
-        { sub: 'user-1', email: 'user1@example.com', role: 'USER' },
-        { sub: 'user-2', email: 'user2@example.com', role: 'USER' },
-        { sub: 'user-3', email: 'user3@example.com', role: 'ADMIN' },
+        {
+          sub: 'user-1',
+          email: 'user1@example.com',
+          name: 'User One',
+          avatarUrl: 'https://example.com/avatar1.jpg',
+          role: 'USER',
+        },
+        {
+          sub: 'user-2',
+          email: 'user2@example.com',
+          name: 'User Two',
+          avatarUrl: null,
+          role: 'USER',
+        },
+        {
+          sub: 'user-3',
+          email: 'user3@example.com',
+          name: null,
+          avatarUrl: 'https://example.com/avatar3.jpg',
+          role: 'ADMIN',
+        },
       ] as JwtPayload[];
 
       for (let i = 0; i < 3; i++) {

@@ -53,6 +53,8 @@ export class AuthService {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
+      name: user.name,
+      avatarUrl: user.avatarUrl,
       role: user.role,
     };
     const accessToken = await this.jwtService.sign(payload);
@@ -72,15 +74,30 @@ export class AuthService {
     const plainUser = {
       id: payload.sub,
       email: payload.email,
+      name: payload.name,
+      avatarUrl: payload.avatarUrl,
       role: payload.role as UserRole,
-      name: null, // TODO: Fetch from DB
-      avatarUrl: null, // TODO: Fetch from DB
-      tier: ServiceTier.FREE, // TODO: Fetch from DB
+      tier: ServiceTier.FREE, // TODO: Fetch from DB khi có user module
     };
 
     // Chuyển đổi sang instance của UserProfileDto để áp dụng @Exclude/@Expose
     return plainToInstance(UserProfileDto, plainUser, {
       excludeExtraneousValues: true,
     });
+  }
+
+  /**
+   * Đăng xuất người dùng
+   * Hiện tại chỉ validate request - có thể mở rộng sau
+   * Future features:
+   * - Token blacklist với Redis
+   * - Audit log logout events
+   * - Revoke all user sessions
+   * @param _payload - JWT payload của user đang logout
+   */
+  logout(_payload: JwtPayload): void {
+    // TODO: Implement token blacklist với Redis
+    // TODO: Log audit event
+    // Hiện tại chỉ validate - actual logout xử lý ở client side
   }
 }

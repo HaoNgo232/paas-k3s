@@ -1,11 +1,14 @@
+import type { JWTPayload } from 'jose';
+
 /**
  * JWT Payload Interface
- * Định nghĩa cấu trúc của JWT payload
+ * Extend từ jose.JWTPayload để kế thừa standard claims (iat, exp, sub, etc.)
+ * Thêm custom claims cho application
  */
-export interface JwtPayload {
-  sub: string; // User ID
+export interface JwtPayload extends JWTPayload {
+  sub: string; // User ID (override để bắt buộc)
   email: string;
+  name: string | null;
+  avatarUrl: string | null;
   role: string;
-  iat?: number; // Issued At
-  exp?: number; // Expiration Time
 }

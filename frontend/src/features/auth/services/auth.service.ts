@@ -45,14 +45,14 @@ export class AuthService {
 
   /**
    * Đăng xuất khỏi hệ thống
-   * @throws ApiError khi API call thất bại (non-critical)
+   * Non-blocking: Nếu API fail, client vẫn clear state
    */
   async logout(): Promise<void> {
     try {
       await this.http.post<ApiResponse<null>>(API_ENDPOINTS.AUTH.LOGOUT);
-    } catch (error) {
-      // Log lỗi nhưng không ném lỗi - client vẫn clear state
-      console.error("Logout API failed:", error);
+    } catch {
+      // Ignore error - client sẽ clear local state dù sao
+      // TODO: Implement proper error logging service
     }
   }
 
@@ -85,7 +85,17 @@ export class AuthService {
 
     try {
       // Decode payload to check expiration
-      const payload = JSON.parse(atob(parts[1]));
+      // Use decodeURIComponent + escape for Unicode-safe base64 decode
+      const base64Url = parts[1];
+      const base64 = base64Url.replaceAll("-", "+").replaceAll("_", "/");
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split("")
+          .map((c) => "%" + ("00" + c.codePointAt(0)!.toString(16)).slice(-2))
+          .join(""),
+      );
+
+      const payload = JSON.parse(jsonPayload);
       if (!payload.exp) return true; // No expiration claim
 
       const expirationTime = payload.exp * 1000; // Convert to milliseconds

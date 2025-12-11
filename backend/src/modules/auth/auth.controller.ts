@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Req,
   Res,
   UseGuards,
@@ -11,7 +12,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from '@modules/auth/services/auth.service';
 import { JwtAuthGuard } from '@modules/auth/guards/jwt-auth.guard';
-import { JwtPayload } from '@modules/auth/interfaces/jwt-payload.interface';
+import { validateJwtPayload } from '@modules/auth/guards/jwt-payload.guard';
 import { UserProfileDto } from '@modules/auth/dto/auth.dto';
 import type { User } from '@modules/auth/interfaces/user.interface';
 import { FRONTEND_ROUTES, buildRedirectUrl } from '@common/constants';
@@ -89,26 +90,37 @@ export class AuthController {
    */
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  getCurrentUser(@Req() req: Request): UserProfileDto {
-    const payload = req.user as JwtPayload;
-    if (!payload) {
+  getCurrentUser(@Req() req: Request): { data: UserProfileDto } {
+    if (!req.user) {
       throw new UnauthorizedException('User not found');
     }
 
-    return this.authService.getUserFromToken(payload);
+    const payload = validateJwtPayload(req.user);
+    const user = this.authService.getUserFromToken(payload);
+    return { data: user };
   }
 
   /**
    * Logout endpoint
-   * Endpoint: GET /auth/logout
+   * Endpoint: POST /auth/logout
    * Requires: Valid JWT token in Authorization header
    * Note: Token invalidation handled by frontend (remove token from storage)
+   * Future: Có thể thêm token blacklist hoặc audit log
    */
-  @Get('logout')
+  @Post('logout')
   @UseGuards(JwtAuthGuard)
-  logout(@Res() res: Response): void {
-    // Logic đơn giản: client sẽ xóa token từ localStorage/cookies
-    // Nếu cần logout trong backend, có thể implement token blacklist
-    res.json({ message: 'Logged out successfully' });
+  logout(@Req() req: Request): { data: null; message: string } {
+    if (!req.user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const payload = validateJwtPayload(req.user);
+    // Gọi service để xử lý logout logic (hiện tại chỉ log)
+    this.authService.logout(payload);
+
+    return {
+      data: null,
+      message: 'Logged out successfully',
+    };
   }
 }

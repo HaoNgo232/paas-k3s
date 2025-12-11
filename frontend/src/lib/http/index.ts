@@ -30,7 +30,7 @@ class HttpClientFactory {
    * Reset instance - dùng cho testing
    */
   static resetInstance(): void {
-    this.instance = undefined as any;
+    this.instance = null as unknown as AxiosHttpClient;
   }
 }
 

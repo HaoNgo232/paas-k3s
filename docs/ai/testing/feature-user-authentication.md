@@ -10,67 +10,70 @@ description: Xác định phương pháp kiểm thử, các trường hợp ki�
 
 **Chúng ta nhắm đến mức độ kiểm thử nào?**
 
-- **Unit Tests:** ✅ 100% bao phủ cho core logic (AuthService, JwtService, JwtAuthGuard, AuthController).
-- **Integration Tests:** ⏳ Kiểm thử endpoint `/auth/me` với một JWT hợp lệ (sẽ làm trong E2E tests).
-- **Manual Tests:** ⏳ Luồng OAuth đầy đủ với tài khoản GitHub thực.
+- **Unit Tests:** 100% bao phủ cho core logic (AuthService, JwtService, JwtAuthGuard, AuthController).
+- **Integration Tests:** Kiểm thử endpoint `/auth/me` với một JWT hợp lệ (sẽ làm trong E2E tests).
+- **Manual Tests:** Luồng OAuth đầy đủ với tài khoản GitHub thực.
 
-## ✅ Unit Tests Completed
+## Unit Tests Completed
 
 **Tất cả test files đã được tạo và pass:**
 
 ### JwtService (`jwt.service.spec.ts`)
 
-- ✅ **sign():** Tạo JWT token thành công với HS256, iat, exp claims
-- ✅ **sign():** Embed custom data in payload
-- ✅ **sign():** Handle signing errors
-- ✅ **verify():** Verify valid token successfully
-- ✅ **verify():** Throw error for invalid format, wrong signature, expired, malformed, empty token
-- ✅ **Integration:** Sign and verify round-trip, multiple sequential operations
+- **sign():** Tạo JWT token thành công với HS256, iat, exp claims
+- **sign():** Embed custom data in payload
+- **sign():** Handle signing errors
+- **verify():** Verify valid token successfully
+- **verify():** Throw error for invalid format, wrong signature, expired, malformed, empty token
+- **Integration:** Sign and verify round-trip, multiple sequential operations
 
 **Coverage:** 100% statements, 100% branches, 100% functions
 
 ### AuthService (`auth.service.spec.ts`)
 
-- ✅ **validateUser():** Convert GitHub profile to User entity (email selection, photo selection, default role/tier, timestamps)
-- ✅ **login():** Generate JWT token with correct payload structure
-- ✅ **login():** Handle admin role properly
-- ✅ **getUserFromToken():** Convert JWT payload to UserProfileDTO
-- ✅ **Edge cases:** Minimal GitHub data, concurrent operations
+- **validateUser():** Convert GitHub profile to User entity (email selection, photo selection, default role/tier, timestamps)
+- **login():** Generate JWT token with correct payload structure
+- **login():** Handle admin role properly
+- **getUserFromToken():** Convert JWT payload to UserProfileDTO
+- **Edge cases:** Minimal GitHub data, concurrent operations
 
 **Coverage:** 100% statements, 75% branches, 100% functions
 
 ### JwtAuthGuard (`jwt-auth.guard.spec.ts`)
 
-- ✅ **canActivate():** Return true for valid Bearer token and attach user to request
-- ✅ **canActivate():** Throw UnauthorizedException for missing/invalid/malformed tokens
-- ✅ **extractTokenFromHeader():** Handle various header formats (valid, whitespace, case sensitivity)
-- ✅ **Security:** No token leaking in errors, concurrent execution safety
-- ✅ **Integration:** Admin/user authorization scenarios
+- **canActivate():** Return true for valid Bearer token and attach user to request
+- **canActivate():** Throw UnauthorizedException for missing/invalid/malformed tokens
+- **extractTokenFromHeader():** Handle various header formats (valid, whitespace, case sensitivity)
+- **Security:** No token leaking in errors, concurrent execution safety
+- **Integration:** Admin/user authorization scenarios
 
 **Coverage:** 100% statements, 92.85% branches, 100% functions
 
 ### AuthController (`auth.controller.spec.ts`)
 
-- ✅ **githubAuth():** Trigger GitHub OAuth flow
-- ✅ **githubAuthRedirect():** Redirect with token on success
-- ✅ **githubAuthRedirect():** Handle errors (missing user, login failure, unknown error types)
-- ✅ **githubAuthRedirect():** URL encode error messages properly
-- ✅ **githubAuthRedirect():** Use FRONTEND_URL from config
-- ✅ **getCurrentUser():** Return user profile from JWT payload
-- ✅ **getCurrentUser():** Throw UnauthorizedException when user missing
-- ✅ **logout():** Return success message
+- **githubAuth():** Trigger GitHub OAuth flow
+- **githubAuthRedirect():** Redirect with token on success
+- **githubAuthRedirect():** Handle errors (missing user, login failure, unknown error types)
+- **githubAuthRedirect():** URL encode error messages properly
+- **githubAuthRedirect():** Use FRONTEND_URL from config
+- **getCurrentUser():** Return user profile from JWT payload
+- **getCurrentUser():** Throw UnauthorizedException when user missing
+- **logout():** Return success message
 
 **Coverage:** 100% statements, 80% branches, 100% functions
 
 ## Test Statistics
 
 ```
-Test Suites: 4 passed, 4 total
-Tests:       77 passed, 77 total
-Time:        ~8s
+Test Suites: 5 passed, 5 total
+Tests:       78 passed, 78 total
+Time:        ~4.8s
+Lint:         0 errors (100% compliance)
 ```
 
-## ⏳ Integration Tests (Pending)
+**Status:** Unit testing phase complete (12/11/2025)
+
+## Integration Tests (Pending)
 
 **Chúng ta kiểm thử tương tác giữa các thành phần như thế nào?**
 

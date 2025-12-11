@@ -6,6 +6,23 @@ description: Ghi chú triển khai kỹ thuật, các mẫu và hướng dẫn m
 
 # Hướng dẫn Triển khai
 
+## Trạng thái Triển khai (12/11/2025)
+
+| Phase       | Task                  | Status  | Notes                                    |
+| ----------- | --------------------- | ------- | ---------------------------------------- |
+| Backend     | Setup & Dependencies  | Done    | jest mock for jose, all deps installed   |
+| Backend     | Auth Module & Service | Done    | validateUser, login, getUserFromToken    |
+| Backend     | JWT Service           | Done    | Sign/verify with jose, 12 tests          |
+| Backend     | GitHub Strategy       | Done    | Integrated with passport                 |
+| Backend     | JWT Guard             | Done    | Custom guard with jose verify, 27 tests  |
+| Backend     | Auth Controller       | Done    | 4 endpoints + 14 tests                   |
+| Backend     | Unit Tests            | Done    | 78 tests, 100% coverage for core logic   |
+| Backend     | Linting               | Done    | Zero errors, full TypeScript strict mode |
+| Frontend    | Setup & Dependencies  | Pending | js-cookie, lucide-react                  |
+| Frontend    | Auth Context          | Pending | AuthProvider, useAuth hook               |
+| Frontend    | Pages & Routes        | Pending | /login, /callback, protected routes      |
+| Integration | E2E Testing           | Pending | Manual GitHub OAuth flow                 |
+
 ## Thiết lập Phát triển
 
 **Chúng ta bắt đầu như thế nào?**
@@ -154,8 +171,9 @@ Sử dụng `JwtService` để ký token thay vì gọi trực tiếp `jose`.
 ```typescript
 @Injectable()
 export class AuthService {
-  constructor(private jwtService: JwtService) // ... other services
-  {}
+  constructor(
+    private jwtService: JwtService, // ... other services
+  ) {}
 
   async login(user: any) {
     const payload = { sub: user.id, email: user.email, role: user.role };

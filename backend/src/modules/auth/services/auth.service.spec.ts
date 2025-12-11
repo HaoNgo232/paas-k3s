@@ -210,6 +210,8 @@ describe('AuthService', () => {
       expect(mockJwtService.sign).toHaveBeenCalledWith({
         sub: 'user-456',
         email: 'payload@example.com',
+        name: 'Payload User',
+        avatarUrl: 'https://github.com/payload.jpg',
         role: UserRole.ADMIN,
       });
       expect(mockJwtService.sign).toHaveBeenCalledTimes(1);
@@ -272,6 +274,8 @@ describe('AuthService', () => {
         sub: 'token-user-123',
         email: 'tokenuser@example.com',
         role: 'USER',
+        name: 'Test User',
+        avatarUrl: 'https://example.com/avatar.jpg',
       };
 
       const userProfile = service.getUserFromToken(mockPayload);
@@ -287,6 +291,8 @@ describe('AuthService', () => {
         sub: 'minimal-user',
         email: 'minimal@example.com',
         role: 'USER',
+        name: null,
+        avatarUrl: null,
       };
 
       const userProfile = service.getUserFromToken(mockPayload);
@@ -301,6 +307,8 @@ describe('AuthService', () => {
         sub: 'admin-token-123',
         email: 'admintoken@example.com',
         role: 'ADMIN',
+        name: 'Admin User',
+        avatarUrl: 'https://example.com/admin-avatar.jpg',
       };
 
       const userProfile = service.getUserFromToken(mockPayload);
@@ -313,6 +321,8 @@ describe('AuthService', () => {
         sub: 'dto-user',
         email: 'dto@example.com',
         role: 'USER',
+        name: 'Test User',
+        avatarUrl: 'https://example.com/avatar.jpg',
       };
 
       const userProfile = service.getUserFromToken(mockPayload);

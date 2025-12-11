@@ -84,9 +84,9 @@ export const spacesService = new SpacesService(httpClient);
 
 **Lợi ích DI Pattern:**
 
-- ✅ Dễ mock `httpClient` khi test
-- ✅ Có thể swap implementation (axios → fetch)
-- ✅ Tách biệt dependencies rõ ràng
+- Dễ mock `httpClient` khi test
+- Có thể swap implementation (axios → fetch)
+- Tách biệt dependencies rõ ràng
 
 ---
 

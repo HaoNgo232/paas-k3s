@@ -65,9 +65,9 @@ export function useAuth() {
 
   return {
     user: user ?? null,
-    isLoading: isLoading && isAuthenticated,
+    isLoading: isLoading && !isError,
     isInitialized,
-    isAuthenticated: isAuthenticated && !isError && !!user,
+    isAuthenticated: isAuthenticated && !isError,
     error: isError ? error : null,
     loginWithToken,
     logout,

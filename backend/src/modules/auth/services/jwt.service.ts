@@ -2,7 +2,8 @@ import { Injectable, Inject } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import * as jose from 'jose';
 import authConfig from '@config/auth.config';
-import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { JwtPayload } from '@/modules/auth/interfaces/jwt-payload.interface';
+import { validateJwtPayload } from '@/modules/auth/guards/jwt-payload.guard';
 
 /**
  * JWT Service
@@ -26,7 +27,7 @@ export class JwtService {
    * @returns Token đã ký
    */
   async sign(payload: JwtPayload): Promise<string> {
-    return new jose.SignJWT(payload as unknown as jose.JWTPayload)
+    return new jose.SignJWT(payload)
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime(this.config.jwtExpiresIn)
@@ -37,10 +38,10 @@ export class JwtService {
    * Xác minh JWT token
    * @param token - Token cần xác minh
    * @returns Payload nếu token hợp lệ
-   * @throws Error nếu token không hợp lệ hoặc hết hạn
+   * @throws Error nếu token không hợp lệ, hết hạn, hoặc payload structure sai
    */
   async verify(token: string): Promise<JwtPayload> {
     const { payload } = await jose.jwtVerify(token, this.secret);
-    return payload as unknown as JwtPayload;
+    return validateJwtPayload(payload);
   }
 }

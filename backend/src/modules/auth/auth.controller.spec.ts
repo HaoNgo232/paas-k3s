@@ -15,6 +15,7 @@ describe('AuthController', () => {
   const mockAuthService = {
     login: jest.fn(),
     getUserFromToken: jest.fn(),
+    logout: jest.fn(),
   };
 
   const mockConfigService = {
@@ -245,6 +246,8 @@ describe('AuthController', () => {
       sub: 'user-456',
       email: 'current@example.com',
       role: UserRole.USER,
+      name: 'Test User',
+      avatarUrl: 'https://example.com/avatar.jpg',
     };
 
     const mockUserProfile: UserProfileDto = {
@@ -270,7 +273,7 @@ describe('AuthController', () => {
       expect(mockAuthService.getUserFromToken).toHaveBeenCalledWith(
         mockJwtPayload,
       );
-      expect(result).toEqual(mockUserProfile);
+      expect(result).toEqual({ data: mockUserProfile });
     });
 
     it('should throw UnauthorizedException when user is missing', () => {
@@ -310,8 +313,8 @@ describe('AuthController', () => {
 
       const result = controller.getCurrentUser(mockRequest as Request);
 
-      expect(result.role).toBe(UserRole.ADMIN);
-      expect(result).toEqual(adminProfile);
+      expect(result.data.role).toBe(UserRole.ADMIN);
+      expect(result).toEqual({ data: adminProfile });
     });
 
     it('should call getUserFromToken with correct payload structure', () => {
@@ -341,43 +344,69 @@ describe('AuthController', () => {
   });
 
   describe('logout', () => {
-    let mockResponse: Partial<Response>;
+    let mockRequest: Partial<Request>;
+
+    const mockJwtPayload: JwtPayload = {
+      sub: 'user-789',
+      email: 'logout-user@example.com',
+      role: UserRole.USER,
+      name: 'Logout User',
+      avatarUrl: 'https://example.com/logout-avatar.jpg',
+    };
 
     beforeEach(() => {
-      mockResponse = {
-        json: jest.fn(),
+      mockRequest = {
+        user: mockJwtPayload,
       };
+      // Reset mock để đảm bảo clean state
+      jest.clearAllMocks();
     });
 
     it('should return success message', () => {
-      controller.logout(mockResponse as Response);
+      const result = controller.logout(mockRequest as Request);
 
-      expect(mockResponse.json).toHaveBeenCalledWith({
+      expect(result).toEqual({
+        data: null,
         message: 'Logged out successfully',
       });
     });
 
-    it('should call json method exactly once', () => {
-      controller.logout(mockResponse as Response);
+    it('should call authService.logout with payload', () => {
+      controller.logout(mockRequest as Request);
 
-      expect(mockResponse.json).toHaveBeenCalledTimes(1);
+      expect(mockAuthService.logout).toHaveBeenCalledWith(mockJwtPayload);
+      expect(mockAuthService.logout).toHaveBeenCalledTimes(1);
     });
 
-    it('should not interact with authService', () => {
-      controller.logout(mockResponse as Response);
+    it('should throw UnauthorizedException when user is missing', () => {
+      mockRequest.user = undefined;
 
-      expect(mockAuthService.login).not.toHaveBeenCalled();
-      expect(mockAuthService.getUserFromToken).not.toHaveBeenCalled();
-    });
-
-    it('should return consistent message format', () => {
-      controller.logout(mockResponse as Response);
-
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: expect.any(String) as string,
-        }),
+      expect(() => controller.logout(mockRequest as Request)).toThrow(
+        UnauthorizedException,
       );
+      expect(() => controller.logout(mockRequest as Request)).toThrow(
+        'User not found',
+      );
+    });
+
+    it('should throw UnauthorizedException when user is null', () => {
+      mockRequest.user = null as unknown as User;
+
+      expect(() => controller.logout(mockRequest as Request)).toThrow(
+        UnauthorizedException,
+      );
+      expect(() => controller.logout(mockRequest as Request)).toThrow(
+        'User not found',
+      );
+    });
+
+    it('should return consistent response format', () => {
+      const result = controller.logout(mockRequest as Request);
+
+      expect(result).toHaveProperty('data');
+      expect(result).toHaveProperty('message');
+      expect(result.data).toBeNull();
+      expect(typeof result.message).toBe('string');
     });
   });
 });

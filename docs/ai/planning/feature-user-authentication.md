@@ -6,11 +6,32 @@ description: Phân chia công việc thành các nhiệm vụ khả thi và ư�
 
 # Kế hoạch Dự án & Phân chia Công việc
 
+## 📊 Tóm Tắt Tiến Độ (12/11/2025)
+
+**Trạng thái chung:** Backend hoàn thành (100%) | Frontend chưa bắt đầu | E2E Testing pending
+
+**Hoàn thành:**
+
+- Tất cả 4 task giai đoạn 1 (Backend implementation)
+- 78/78 unit tests pass (100% statement coverage cho core logic)
+- Zero linting errors (full TypeScript strict mode + ESLint compliance)
+- 4 test suites: JwtService, AuthService, JwtAuthGuard, AuthController
+
+**Tiếp theo (Ưu tiên):**
+
+- 🔄 Phase 2: Frontend Auth Context & Pages (5 tasks)
+- Phase 3: End-to-end testing & GitHub OAuth integration
+
+**Rủi ro chính:**
+
+- Frontend-Backend CORS setup cần validation
+- GitHub OAuth callback URL configuration trên production
+
 ## Các cột mốc
 
 **Các điểm kiểm tra chính là gì?**
 
-- [ ] **Milestone 1: Nền tảng Auth Backend** (API endpoints hoạt động, phát hành JWT bằng `jose`)
+- [x] **Milestone 1: Nền tảng Auth Backend** (API endpoints hoạt động, phát hành JWT bằng `jose`) - Hoàn thành 12/11/2025
 - [ ] **Milestone 2: Tích hợp Frontend** (Giao diện đăng nhập, Xử lý Token, Các route được bảo vệ)
 - [ ] **Milestone 3: Xác minh End-to-End** (Luồng đăng nhập đầy đủ hoạt động)
 
@@ -37,7 +58,7 @@ description: Phân chia công việc thành các nhiệm vụ khả thi và ư�
 
 ### Giai đoạn 2: Triển khai Frontend
 
-- [x] **Task 2.1: Thiết lập Auth Context**
+- [ ] **Task 2.1: Thiết lập Auth Context**
   - Tạo context `AuthProvider`.
   - Triển khai trạng thái `login`, `logout`, `user`.
 - [ ] **Task 2.2: Tạo Trang Đăng nhập**
@@ -94,21 +115,21 @@ description: Phân chia công việc thành các nhiệm vụ khả thi và ư�
 
 ### Current State: Accessible Cookie + Bearer Token
 
-**✅ Lợi ích:**
+** Lợi ích:**
 
 - Đơn giản, chuẩn REST API
 - Dễ dàng support multi-client (web, mobile, CLI)
 - Authorization header là industry standard
 - Dễ debug và test
 
-**⚠️ Trade-off:**
+** Trade-off:**
 
 - JWT token có thể bị XSS attack đánh cắp
 - Cần dựa vào Next.js built-in protections
 
 ### Future State: HttpOnly Cookie + Dual Auth Mode
 
-**🎯 Migration Path (Giai đoạn nâng cao):**
+** Migration Path (Giai đoạn nâng cao):**
 
 #### Phase 1: Dual Auth Support (Tương thích ngược)
 

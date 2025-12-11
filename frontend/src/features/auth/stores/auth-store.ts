@@ -18,7 +18,7 @@ interface AuthState {
  * Client state management với Zustand
  * Sử dụng Storage Abstraction thay vì direct Cookies
  */
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set, _get) => ({
   token: null,
   isAuthenticated: false,
   isInitialized: false,

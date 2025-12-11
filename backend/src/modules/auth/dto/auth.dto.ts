@@ -36,11 +36,11 @@ export class UserProfileDto {
 
   @Expose()
   @IsString()
-  name: string;
+  name: string | null;
 
   @Expose()
   @IsString()
-  avatarUrl?: string;
+  avatarUrl: string | null;
 
   @Expose()
   @IsEnum(UserRole)

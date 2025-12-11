@@ -63,6 +63,8 @@ describe('JwtAuthGuard', () => {
         sub: 'user-123',
         email: 'test@example.com',
         role: 'USER',
+        name: 'Test User',
+        avatarUrl: 'https://example.com/avatar.jpg',
       };
 
       mockJwtService.verify.mockResolvedValue(mockPayload);
@@ -80,6 +82,8 @@ describe('JwtAuthGuard', () => {
         sub: 'user-456',
         email: 'attach@example.com',
         role: 'ADMIN',
+        name: 'Admin User',
+        avatarUrl: 'https://example.com/admin-avatar.jpg',
       };
 
       mockJwtService.verify.mockResolvedValue(mockPayload);
@@ -218,6 +222,8 @@ describe('JwtAuthGuard', () => {
         sub: 'extract-user',
         email: 'extract@example.com',
         role: 'USER',
+        name: 'Test User',
+        avatarUrl: 'https://example.com/avatar.jpg',
       };
 
       mockJwtService.verify.mockResolvedValue(mockPayload);
@@ -249,6 +255,8 @@ describe('JwtAuthGuard', () => {
         sub: 'preserve-user',
         email: 'preserve@example.com',
         role: 'USER',
+        name: 'Test User',
+        avatarUrl: 'https://example.com/avatar.jpg',
       };
 
       mockJwtService.verify.mockResolvedValue(mockPayload);
@@ -307,12 +315,16 @@ describe('JwtAuthGuard', () => {
         sub: 'concurrent-1',
         email: 'concurrent1@example.com',
         role: 'USER',
+        name: 'Test User',
+        avatarUrl: 'https://example.com/avatar.jpg',
       };
 
       const mockPayload2: JwtPayload = {
         sub: 'concurrent-2',
         email: 'concurrent2@example.com',
         role: 'ADMIN',
+        name: 'Admin User',
+        avatarUrl: 'https://example.com/admin-avatar.jpg',
       };
 
       mockJwtService.verify
@@ -356,6 +368,8 @@ describe('JwtAuthGuard', () => {
         sub: 'admin-001',
         email: 'admin@example.com',
         role: 'ADMIN',
+        name: 'Admin User',
+        avatarUrl: 'https://example.com/admin-avatar.jpg',
       };
 
       mockJwtService.verify.mockResolvedValue(adminPayload);
@@ -374,6 +388,8 @@ describe('JwtAuthGuard', () => {
         sub: 'user-001',
         email: 'user@example.com',
         role: 'USER',
+        name: 'Test User',
+        avatarUrl: 'https://example.com/avatar.jpg',
       };
 
       mockJwtService.verify.mockResolvedValue(userPayload);

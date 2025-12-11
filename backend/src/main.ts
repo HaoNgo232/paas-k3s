@@ -15,10 +15,23 @@ if (process.env.NODE_ENV === 'production') {
 
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from '@/app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Lấy ConfigService để đọc cấu hình
+  const configService = app.get(ConfigService);
+  const frontendUrl = configService.get<string>('app.frontendUrl');
+
+  // Cấu hình CORS
+  app.enableCors({
+    origin: frontendUrl,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
 
   // Kích hoạt ValidationPipe toàn cục
   app.useGlobalPipes(

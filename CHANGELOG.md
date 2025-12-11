@@ -9,29 +9,29 @@ và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
-- **Frontend Structure**: Refactored to Feature-based Architecture.
-  - Moved `app` and `lib` to `src/`.
-  - Created standard folders: `features/`, `components/` (ui, layout, common), `hooks/`, `types/`, `styles/`.
-  - Updated `tsconfig.json` and `components.json` aliases.
+- **Cấu trúc Frontend**: Tái cấu trúc thành Feature-based Architecture.
+  - Di chuyển `app` và `lib` vào `src/`.
+  - Tạo các thư mục chuẩn: `features/`, `components/` (ui, layout, common), `hooks/`, `types/`, `styles/`.
+  - Cập nhật aliases trong `tsconfig.json` và `components.json`.
 
 ### Added
 
-- **Development Instructions**:
-  - Added comprehensive GitHub Copilot instructions (`.github/copilot-instructions.md`).
-  - Added Backend-specific instructions with NestJS patterns (`.github/instructions/backend.instructions.md`).
-  - Added Frontend-specific instructions with Next.js patterns (`.github/instructions/frontend.instructions.md`).
+- **Hướng dẫn Development**:
+  - Thêm GitHub Copilot instructions chi tiết (`.github/copilot-instructions.md`).
+  - Thêm hướng dẫn Backend với NestJS patterns (`.github/instructions/backend.instructions.md`).
+  - Thêm hướng dẫn Frontend với Next.js patterns (`.github/instructions/frontend.instructions.md`).
 - **Containerization**:
-  - Added `Dockerfile` for Backend (NestJS optimized build).
-  - Added `Dockerfile` for Frontend (Next.js standalone build).
+  - Thêm `Dockerfile` cho Backend (NestJS optimized build).
+  - Thêm `Dockerfile` cho Frontend (Next.js standalone build).
 - **CI/CD**:
-  - Added GitHub Actions workflows: `frontend.yml` and `backend.yml`.
+  - Thêm GitHub Actions workflows: `frontend.yml` và `backend.yml`.
 - **Kubernetes Manifests**:
-  - Created `k8s/` directory.
-  - Added `namespace.yaml`, `frontend.yaml`, `backend.yaml`, `ingress.yaml`, `secrets.yaml.example`.
+  - Tạo thư mục `k8s/`.
+  - Thêm `namespace.yaml`, `frontend.yaml`, `backend.yaml`, `ingress.yaml`, `secrets.yaml.example`.
 - **Local Development**:
-  - Added `docker-compose.yml` for PostgreSQL.
-  - Added `.env.example` for both Frontend and Backend.
-- **License**: Added MIT License.
+  - Thêm `docker-compose.yml` cho PostgreSQL.
+  - Thêm `.env.example` cho cả Frontend và Backend.
+- **License**: Thêm MIT License.
 
 ---
 
@@ -40,23 +40,50 @@ và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 
 - **Backend Authentication (F01)**:
-  - Implemented `AuthModule` with `passport-github2` and `jose` (JWT).
-  - Added `GithubStrategy` for OAuth flow.
-  - Added `JwtAuthGuard` for stateless authentication.
-  - Added `AuthService` and `AuthController` with endpoints: `/auth/github`, `/callback`, `/me`.
-  - Implemented **Secure by Default** DTOs using `class-transformer` (`@Exclude`/`@Expose`).
+  - Triển khai `AuthModule` với `passport-github2` và `jose` (JWT).
+  - Thêm `GithubStrategy` cho OAuth flow.
+  - Thêm `JwtAuthGuard` cho stateless authentication.
+  - Thêm `AuthService` và `AuthController` với các endpoint:
+    - `GET /auth/github` - Khởi tạo GitHub OAuth flow
+    - `GET /auth/github/callback` - Xử lý OAuth callback
+    - `GET /auth/me` - Lấy thông tin user hiện tại
+    - `POST /auth/logout` - Đăng xuất user
+  - Triển khai **Secure by Default** DTOs sử dụng `class-transformer` (`@Exclude`/`@Expose`).
+  - Hỗ trợ Unicode trong JWT token (decode an toàn với `decodeURIComponent`).
 - **Frontend Authentication**:
-  - Added `AuthProvider` context and `useAuth` hook.
+  - Thêm feature-based structure: `features/auth/`
+  - Thêm `authStore` (Zustand) để quản lý auth state
+  - Thêm `useAuth` hook với React Query cho data fetching
+  - Thêm `authService` với các method: `getMe()`, `logout()`, `isTokenValid()`
+  - Thêm `ProtectedRoute` component để bảo vệ routes
+  - Thêm UI components: `Header`, `UserNav` (dropdown menu)
+  - Triển khai login flow: GitHub OAuth → JWT Token → Cookie Storage → Dashboard
 - **Infrastructure**:
-  - Added `module-alias` configuration for production builds.
-  - Configured `ConfigModule` with `expandVariables: true` for nested env vars.
+  - Thêm cấu hình `module-alias` cho production builds.
+  - Cấu hình `ConfigModule` với `expandVariables: true` cho nested env vars.
 
 ### Changed
 
 - **Architecture**:
-  - Refactored `User` interface to use **Facade Pattern** (re-exporting from `@prisma/client`).
-  - Standardized `PrismaService` to use default `prisma-client-js` provider in `node_modules`.
-  - Updated `tsconfig.json` to include `test` folder and optimize paths.
+  - Tái cấu trúc `User` interface sử dụng **Facade Pattern** (re-export từ `@prisma/client`).
+  - Chuẩn hóa `PrismaService` sử dụng default `prisma-client-js` provider trong `node_modules`.
+  - Cập nhật `tsconfig.json` để include `test` folder và tối ưu paths.
+- **Code Quality**:
+  - Loại bỏ console.log/console.error trong production code.
+  - Thêm TODO comments cho future features (Redis token blacklist, audit logging).
+  - Refactor `JwtPayload` để extend từ `jose.JWTPayload` thay vì tự định nghĩa lại (tận dụng standard claims).
+  - Loại bỏ type casting không cần thiết (`as unknown as`) trong JWT service.
+  - **Implement Type Guard cho JwtPayload**: Thay type assertion bằng runtime validation để đảm bảo type safety.
+    - Thêm `isJwtPayload()` type guard và `validateJwtPayload()` helper.
+    - Phát hiện và fix bug trong test cases (payload thiếu fields).
+    - 95/95 tests passed với full validation coverage.
+
+### Fixed
+
+- **CORS**: Cấu hình backend để chấp nhận requests từ frontend với credentials.
+- **Unicode Support**: JWT token decode an toàn với `decodeURIComponent` cho tên người dùng có ký tự Unicode.
+- **API Response Format**: Chuẩn hóa response format với `{ data: T }` wrapper.
+- **Loading State**: Sửa infinite loading khi có authentication error.
 
 ## [0.2.1] - 2025-12-11
 
