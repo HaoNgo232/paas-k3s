@@ -98,7 +98,7 @@
       "^@modules/(.*)$": "<rootDir>/modules/$1",
       "^@common/(.*)$": "<rootDir>/common/$1",
       "^@kubernetes/(.*)$": "<rootDir>/kubernetes/$1",
-      "^@prisma/(.*)$": "<rootDir>/prisma/$1"
+      "^jose$": "<rootDir>/__mocks__/jose.ts"
     }
   }
 }

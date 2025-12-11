@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { JwtService } from 'modules/auth/services/jwt.service';
-import { JwtPayload } from 'modules/auth/interfaces/jwt-payload.interface';
-import { LoginResponseDto, UserProfileDto } from 'modules/auth/dto/auth.dto';
+import { JwtService } from '@modules/auth/services/jwt.service';
+import { JwtPayload } from '@modules/auth/interfaces/jwt-payload.interface';
+import { LoginResponseDto, UserProfileDto } from '@modules/auth/dto/auth.dto';
 import { plainToInstance } from 'class-transformer';
 import {
   GithubProfile,
   User,
   UserRole,
   ServiceTier,
-} from 'modules/auth/interfaces/user.interface';
+} from '@modules/auth/interfaces/user.interface';
 
 /**
  * Auth Service

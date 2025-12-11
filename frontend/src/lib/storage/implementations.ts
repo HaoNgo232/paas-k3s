@@ -3,27 +3,7 @@ import { IStorage, StorageOptions } from "@/lib/storage/storage.interface";
 
 /**
  * Cookie Storage Implementation
- * Implements IStorage với js-cookie
- * 
- * ⚠️ SECURITY TRADE-OFF (MVP):
- * Cookies are JavaScript-accessible (NOT HttpOnly) để support Bearer token pattern.
- * 
- * Why this approach:
- * - ✅ Standard REST API với Authorization header
- * - ✅ Multi-client support (web, mobile, CLI)
- * - ✅ Industry-standard Bearer token pattern
- * - ✅ Easier debugging và testing
- * 
- * Security measures:
- * - ✅ Secure flag (HTTPS only in production)
- * - ✅ SameSite=lax (CSRF protection)
- * - ✅ Next.js built-in XSS protection
- * - ✅ Token validation before storage
- * 
- * Future enhancement:
- * - Plan to migrate to HttpOnly cookies for web client
- * - See: docs/ai/planning/feature-user-authentication.md
- *       "Security Enhancement Plan (Post-MVP)"
+ * Implements IStorage với js-cookie"
  */
 export class CookieStorage implements IStorage {
   getItem(key: string): string | null {

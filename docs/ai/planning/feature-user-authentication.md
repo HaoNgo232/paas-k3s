@@ -82,7 +82,7 @@ description: Phân chia công việc thành các nhiệm vụ khả thi và ư�
 - **Rủi ro:** Vấn đề CORS giữa Frontend (3000) và Backend (3001).
   - _Giảm thiểu:_ Cấu hình CORS trong `main.ts` của NestJS.
 - **Rủi ro:** XSS attack có thể đánh cắp JWT token từ accessible cookies.
-  - _Giảm thiểu MVP:_ 
+  - _Giảm thiểu MVP:_
     - Sử dụng Secure + SameSite flags
     - Next.js built-in XSS protection
     - Input sanitization
@@ -95,12 +95,14 @@ description: Phân chia công việc thành các nhiệm vụ khả thi và ư�
 ### Current State: Accessible Cookie + Bearer Token
 
 **✅ Lợi ích:**
+
 - Đơn giản, chuẩn REST API
 - Dễ dàng support multi-client (web, mobile, CLI)
 - Authorization header là industry standard
 - Dễ debug và test
 
 **⚠️ Trade-off:**
+
 - JWT token có thể bị XSS attack đánh cắp
 - Cần dựa vào Next.js built-in protections
 
@@ -109,6 +111,7 @@ description: Phân chia công việc thành các nhiệm vụ khả thi và ư�
 **🎯 Migration Path (Giai đoạn nâng cao):**
 
 #### Phase 1: Dual Auth Support (Tương thích ngược)
+
 - [ ] **Backend:** Support cả Bearer token VÀ Cookie-based auth
   ```typescript
   // JwtAuthGuard checks:
@@ -119,13 +122,14 @@ description: Phân chia công việc thành các nhiệm vụ khả thi và ư�
 - [ ] **Testing:** Verify cả 2 auth flows hoạt động
 
 #### Phase 2: HttpOnly Migration (Web only)
+
 - [ ] **Backend:** Set HttpOnly cookie trong auth callback response
   ```typescript
-  res.cookie('accessToken', token, {
+  res.cookie("accessToken", token, {
     httpOnly: true,
     secure: true,
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
   ```
 - [ ] **Frontend:** Remove manual token storage
@@ -133,6 +137,7 @@ description: Phân chia công việc thành các nhiệm vụ khả thi và ư�
 - [ ] **Testing:** E2E test với HttpOnly cookies
 
 #### Phase 3: Token Refresh (Advanced)
+
 - [ ] **Backend:** Implement refresh token mechanism
 - [ ] **Frontend:** Auto-refresh trước khi token expire
 - [ ] **Security:** Refresh token stored in HttpOnly cookie
