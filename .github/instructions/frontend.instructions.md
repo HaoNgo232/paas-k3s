@@ -2,172 +2,125 @@
 applyTo: "frontend/**"
 ---
 
-# Frontend Instructions - Next.js 15 + React Query + Zustand
+# Frontend Pattern - Next.js 15 + React Query + Zustand
 
-## Folder Structure
+## ONE Pattern for ALL Features
 
-Follow feature-based organization:
+Mọi feature đều tuân theo cấu trúc này:
 
 ```
-src/
-├── app/                          # Next.js App Router
-│   ├── (auth)/                   # Auth routes group
-│   │   ├── login/
-│   │   └── callback/
-│   ├── (dashboard)/              # Protected routes group
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   ├── spaces/
-│   │   │   ├── page.tsx
-│   │   │   ├── new/
-│   │   │   └── [spaceId]/
-│   │   └── settings/
-│   ├── (admin)/                  # Admin routes group
-│   ├── layout.tsx
-│   └── page.tsx
-├── features/                     # Feature modules
-│   └── {feature}/
-│       ├── components/
-│       ├── hooks/
-│       └── services/
-├── components/                   # Shared components
-│   ├── ui/                       # shadcn/ui components
-│   ├── layout/
-│   └── common/
-├── lib/                          # Utilities
-├── hooks/                        # Global hooks
-├── stores/                       # Zustand stores
-└── types/                        # TypeScript types
+src/features/{feature}/
+├── services/
+│    └── {feature}.service.ts    # API calls (Class Pattern)
+├── hooks/
+│    └── use-{feature}.ts        # React Query hooks
+├── stores/
+│   └── {feature}-store.ts      # Client state (Zustand)
+├── components/
+│   ├── {feature}-list.tsx      # Container components
+│   └── {feature}-card.tsx      # Presentational components
+└── types/
+     └── index.ts                # TypeScript types
 ```
 
-## API Client Setup
+**3 Layers:**
 
-```typescript
-// lib/api.ts
-const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+1. **Service** → API communication (Class Pattern)
+2. **Hook** → React Query + Zustand (Composition)
+3. **Component** → UI only (No logic)
 
-export class ApiError extends Error {
-  constructor(
-    public statusCode: number,
-    public code: string,
-    message: string,
-    public details?: Record<string, unknown>,
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
-}
+---
 
-async function handleResponse<T>(response: Response): Promise<T> {
-  const data = await response.json();
+## 1. Service Layer (API Calls)
 
-  if (!response.ok) {
-    throw new ApiError(
-      data.statusCode || response.status,
-      data.code || "UNKNOWN_ERROR",
-      data.message || "An error occurred",
-      data.details,
-    );
-  }
+**Rules:**
 
-  return data.data;
-}
-
-export const api = {
-  async get<T>(path: string): Promise<T> {
-    const response = await fetch(`${API_BASE}${path}`, {
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    return handleResponse<T>(response);
-  },
-
-  async post<T>(path: string, body?: unknown): Promise<T> {
-    const response = await fetch(`${API_BASE}${path}`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    return handleResponse<T>(response);
-  },
-
-  async patch<T>(path: string, body: unknown): Promise<T> {
-    const response = await fetch(`${API_BASE}${path}`, {
-      method: "PATCH",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-    return handleResponse<T>(response);
-  },
-
-  async delete<T>(path: string): Promise<T> {
-    const response = await fetch(`${API_BASE}${path}`, {
-      method: "DELETE",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    return handleResponse<T>(response);
-  },
-};
-```
-
-## Feature Service Pattern
+- Dùng Class Pattern với instance methods
+- Inject `httpClient` qua constructor (DI)
+- Export singleton instance để dùng trong hooks
+- Throw `ApiError` khi lỗi
+- Validate response structure
 
 ```typescript
 // features/spaces/services/spaces.service.ts
-import { api } from "@/lib/api";
-import type { Space, CreateSpaceInput, UpdateSpaceInput } from "@/types";
+import { httpClient, HttpClient } from "@/lib/http";
+import { ApiError } from "@/lib/http/errors";
+import { API_ENDPOINTS } from "@/lib/constants";
+import { Space, CreateSpaceInput, ApiResponse } from "../types";
 
-export const spacesService = {
-  list: () => api.get<Space[]>("/spaces"),
+export class SpacesService {
+  constructor(private readonly http: HttpClient) {}
 
-  getById: (id: string) => api.get<Space>(`/spaces/${id}`),
+  async list(): Promise<Space[]> {
+    const response = await this.http.get<ApiResponse<Space[]>>(
+      API_ENDPOINTS.SPACES.LIST,
+    );
+    return response.data.data;
+  }
 
-  create: (data: CreateSpaceInput) => api.post<Space>("/spaces", data),
+  async getById(id: string): Promise<Space> {
+    const response = await this.http.get<ApiResponse<Space>>(
+      API_ENDPOINTS.SPACES.GET(id),
+    );
+    return response.data.data;
+  }
 
-  update: (id: string, data: UpdateSpaceInput) =>
-    api.patch<Space>(`/spaces/${id}`, data),
+  async create(input: CreateSpaceInput): Promise<Space> {
+    const response = await this.http.post<ApiResponse<Space>>(
+      API_ENDPOINTS.SPACES.CREATE,
+      input,
+    );
+    return response.data.data;
+  }
 
-  delete: (id: string) => api.delete<void>(`/spaces/${id}`),
-};
+  async delete(id: string): Promise<void> {
+    await this.http.delete(API_ENDPOINTS.SPACES.DELETE(id));
+  }
+}
+
+// Singleton instance - inject httpClient
+export const spacesService = new SpacesService(httpClient);
 ```
 
-## React Query Hooks Pattern
+**Lợi ích DI Pattern:**
+
+- ✅ Dễ mock `httpClient` khi test
+- ✅ Có thể swap implementation (axios → fetch)
+- ✅ Tách biệt dependencies rõ ràng
+
+---
+
+## 2. Hook Layer (React Query)
+
+**Rules:**
+
+- Compose service + React Query
+- Handle loading/error states
+- Invalidate queries sau mutation
+- Export query keys factory
 
 ```typescript
 // features/spaces/hooks/use-spaces.ts
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { spacesService } from "../services/spaces.service";
-import { toast } from "sonner";
+import { QUERY_KEYS } from "@/lib/constants";
 
-// Query keys factory
+// Query Keys Factory
 export const spaceKeys = {
   all: ["spaces"] as const,
   lists: () => [...spaceKeys.all, "list"] as const,
-  list: (filters: string) => [...spaceKeys.lists(), filters] as const,
-  details: () => [...spaceKeys.all, "detail"] as const,
-  detail: (id: string) => [...spaceKeys.details(), id] as const,
+  detail: (id: string) => [...spaceKeys.all, "detail", id] as const,
 };
 
-// List hook
+// List Hook
 export function useSpaces() {
   return useQuery({
     queryKey: spaceKeys.lists(),
-    queryFn: spacesService.list,
+    queryFn: () => spacesService.list(),
   });
 }
 
-// Detail hook
+// Detail Hook
 export function useSpace(id: string) {
   return useQuery({
     queryKey: spaceKeys.detail(id),
@@ -176,62 +129,71 @@ export function useSpace(id: string) {
   });
 }
 
-// Create mutation
+// Create Mutation
 export function useCreateSpace() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: spacesService.create,
-    onSuccess: (data) => {
+    mutationFn: (input) => spacesService.create(input),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: spaceKeys.lists() });
-      toast.success("Space created successfully");
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
     },
   });
 }
 
-// Update mutation
-export function useUpdateSpace() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateSpaceInput }) =>
-      spacesService.update(id, data),
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: spaceKeys.lists() });
-      queryClient.invalidateQueries({
-        queryKey: spaceKeys.detail(variables.id),
-      });
-      toast.success("Space updated successfully");
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
-}
-
-// Delete mutation
+// Delete Mutation
 export function useDeleteSpace() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: spacesService.delete,
+    mutationFn: (id) => spacesService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: spaceKeys.lists() });
-      toast.success("Space deleted successfully");
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
     },
   });
 }
 ```
 
-## Component Patterns
+---
 
-### Feature Component
+## 3. Store Layer (Client State)
+
+**Rules:**
+
+- Chỉ cho UI state (search, filters, selected items)
+- Không lưu server data (dùng React Query)
+- Dùng `storage` abstraction nếu cần persist
+
+```typescript
+// features/spaces/stores/space-ui-store.ts
+import { create } from "zustand";
+
+interface SpaceUIState {
+  searchQuery: string;
+  selectedId: string | null;
+  setSearchQuery: (query: string) => void;
+  selectSpace: (id: string | null) => void;
+}
+
+export const useSpaceUIStore = create<SpaceUIState>((set) => ({
+  searchQuery: "",
+  selectedId: null,
+  setSearchQuery: (query) => set({ searchQuery: query }),
+  selectSpace: (id) => set({ selectedId: id }),
+}));
+```
+
+---
+
+## 4. Component Layer
+
+**Rules:**
+
+- **Container components**: Connect hooks to UI
+- **Presentational components**: Pure UI, nhận props
+- Không có business logic trong component
+
+### Container Component (connects logic)
 
 ```typescript
 // features/spaces/components/space-list.tsx
@@ -239,36 +201,12 @@ export function useDeleteSpace() {
 
 import { useSpaces } from "../hooks/use-spaces";
 import { SpaceCard } from "./space-card";
-import { SpaceListSkeleton } from "./space-list-skeleton";
-import { EmptyState } from "@/components/common/empty-state";
 
 export function SpaceList() {
-  const { data: spaces, isLoading, error } = useSpaces();
+  const { data: spaces, isLoading } = useSpaces();
 
-  if (isLoading) {
-    return <SpaceListSkeleton />;
-  }
-
-  if (error) {
-    return (
-      <div className="text-destructive">
-        Failed to load spaces: {error.message}
-      </div>
-    );
-  }
-
-  if (!spaces?.length) {
-    return (
-      <EmptyState
-        title="No spaces yet"
-        description="Create your first space to get started"
-        action={{
-          label: "Create Space",
-          href: "/spaces/new",
-        }}
-      />
-    );
-  }
+  if (isLoading) return <div>Loading...</div>;
+  if (!spaces?.length) return <div>No spaces found</div>;
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -280,21 +218,14 @@ export function SpaceList() {
 }
 ```
 
-### Presentational Component
+### Presentational Component (pure UI)
 
 ```typescript
 // features/spaces/components/space-card.tsx
 import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
-import { Folder, ChevronRight } from "lucide-react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
-import type { Space } from "@/types";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { ROUTES } from "@/lib/constants";
+import type { Space } from "../types";
 
 interface SpaceCardProps {
   space: Space;
@@ -302,401 +233,157 @@ interface SpaceCardProps {
 
 export function SpaceCard({ space }: SpaceCardProps) {
   return (
-    <Link href={`/spaces/${space.id}`}>
-      <Card className="hover:border-primary transition-colors cursor-pointer">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <div className="flex items-center gap-2">
-            <Folder className="h-4 w-4 text-muted-foreground" />
-            <CardTitle className="text-lg">{space.name}</CardTitle>
-          </div>
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+    <Link href={`${ROUTES.SPACES}/${space.id}`}>
+      <Card className="hover:border-primary cursor-pointer">
+        <CardHeader>
+          <CardTitle>{space.name}</CardTitle>
         </CardHeader>
-        <CardContent>
-          {space.description && (
-            <CardDescription className="line-clamp-2">
-              {space.description}
-            </CardDescription>
-          )}
-          <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
-            <span>{space._count?.projects || 0} projects</span>
-            <span>
-              Created {formatDistanceToNow(new Date(space.createdAt))} ago
-            </span>
-          </div>
-        </CardContent>
       </Card>
     </Link>
   );
 }
 ```
 
-## Form Handling with Zod
+---
+
+## 5. Constants Layer
+
+**Centralize tất cả hardcoded values:**
 
 ```typescript
-// features/spaces/components/create-space-form.tsx
+// lib/constants.ts
+export const ROUTES = {
+  HOME: "/",
+  LOGIN: "/login",
+  DASHBOARD: "/dashboard",
+  SPACES: "/spaces",
+} as const;
+
+export const API_ENDPOINTS = {
+  SPACES: {
+    LIST: "/spaces",
+    GET: (id: string) => `/spaces/${id}`,
+    CREATE: "/spaces",
+    DELETE: (id: string) => `/spaces/${id}`,
+  },
+} as const;
+
+export const STORAGE_KEYS = {
+  ACCESS_TOKEN: "accessToken",
+} as const;
+
+export const QUERY_KEYS = {
+  SPACES: {
+    LIST: ["spaces", "list"] as const,
+    DETAIL: (id: string) => ["spaces", "detail", id] as const,
+  },
+} as const;
+```
+
+---
+
+## 6. HTTP Client Setup (One-time)
+
+```typescript
+// lib/http/index.ts
+import { AxiosHttpClient } from "./axios-client";
+
+class HttpClientFactory {
+  private static instance: HttpClient;
+
+  static createClient(): HttpClient {
+    if (!this.instance) {
+      this.instance = new AxiosHttpClient({
+        baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
+      });
+    }
+    return this.instance;
+  }
+}
+
+export const httpClient = HttpClientFactory.createClient();
+```
+
+---
+
+## 7. Storage Setup (One-time)
+
+```typescript
+// lib/storage/index.ts
+import { CookieStorage } from "./implementations";
+
+class StorageFactory {
+  private static instance: IStorage;
+
+  static createStorage(): IStorage {
+    if (!this.instance) {
+      this.instance = new CookieStorage();
+    }
+    return this.instance;
+  }
+}
+
+export const storage = StorageFactory.createStorage();
+```
+
+---
+
+## Form Handling Pattern
+
+```typescript
 "use client";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
 import { useCreateSpace } from "../hooks/use-spaces";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 
 const createSpaceSchema = z.object({
-  name: z
-    .string()
-    .min(3, "Name must be at least 3 characters")
-    .max(50, "Name must be at most 50 characters")
-    .regex(
-      /^[a-zA-Z0-9-_]+$/,
-      "Name can only contain letters, numbers, hyphens, and underscores",
-    ),
+  name: z.string().min(3).max(50),
   description: z.string().max(200).optional(),
 });
 
-type CreateSpaceFormValues = z.infer<typeof createSpaceSchema>;
+type FormValues = z.infer<typeof createSpaceSchema>;
 
 export function CreateSpaceForm() {
-  const router = useRouter();
-  const { mutate: createSpace, isPending } = useCreateSpace();
-
-  const form = useForm<CreateSpaceFormValues>({
+  const { mutate, isPending } = useCreateSpace();
+  const form = useForm<FormValues>({
     resolver: zodResolver(createSpaceSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-    },
   });
 
-  function onSubmit(values: CreateSpaceFormValues) {
-    createSpace(values, {
-      onSuccess: (space) => {
-        router.push(`/spaces/${space.id}`);
-      },
-    });
+  function onSubmit(values: FormValues) {
+    mutate(values);
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="my-awesome-project" {...field} />
-              </FormControl>
-              <FormDescription>
-                This will be used to create your Kubernetes namespace
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description (optional)</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="A brief description of your space"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Creating..." : "Create Space"}
-        </Button>
-      </form>
-    </Form>
+    <form onSubmit={form.handleSubmit(onSubmit)}>{/* Form fields */}</form>
   );
 }
 ```
 
-## Zustand Store Pattern
+---
 
-```typescript
-// stores/auth.store.ts
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type { User } from "@/types";
+## Checklist khi tạo Feature mới
 
-interface AuthState {
-  user: User | null;
-  isAuthenticated: boolean;
-  setUser: (user: User | null) => void;
-  logout: () => void;
-}
+- [ ] Service class với static methods (API calls only)
+- [ ] Hooks với React Query (useQuery + useMutation)
+- [ ] Store cho UI state (search, filters, không lưu server data)
+- [ ] Container component (connect hooks)
+- [ ] Presentational component (pure UI)
+- [ ] Add routes/endpoints/keys vào `lib/constants.ts`
+- [ ] Dùng `httpClient` và `storage` từ lib
+- [ ] Path aliases: `@/*`
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      isAuthenticated: false,
+---
 
-      setUser: (user) =>
-        set({
-          user,
-          isAuthenticated: !!user,
-        }),
+## Data Flow
 
-      logout: () =>
-        set({
-          user: null,
-          isAuthenticated: false,
-        }),
-    }),
-    {
-      name: "auth-storage",
-      partialize: (state) => ({ user: state.user }),
-    },
-  ),
-);
+```
+User clicks → Component → Hook → Service → API
+                  ↓
+              Store (UI state only)
+                  ↓
+          React Query (Server data)
 ```
 
-## Page Component Pattern
-
-```typescript
-// app/(dashboard)/spaces/page.tsx
-import { Suspense } from "react";
-import { Plus } from "lucide-react";
-import Link from "next/link";
-import { SpaceList } from "@/features/spaces/components/space-list";
-import { SpaceListSkeleton } from "@/features/spaces/components/space-list-skeleton";
-import { Button } from "@/components/ui/button";
-
-export const metadata = {
-  title: "Spaces | PaaS Platform",
-  description: "Manage your deployment spaces",
-};
-
-export default function SpacesPage() {
-  return (
-    <div className="container py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Spaces</h1>
-          <p className="text-muted-foreground">
-            Organize your projects into isolated workspaces
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/spaces/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Create Space
-          </Link>
-        </Button>
-      </div>
-
-      <Suspense fallback={<SpaceListSkeleton />}>
-        <SpaceList />
-      </Suspense>
-    </div>
-  );
-}
-```
-
-## Error Handling Pattern
-
-```typescript
-// components/common/error-boundary.tsx
-"use client";
-
-import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
-
-interface ErrorBoundaryProps {
-  error: Error & { digest?: string };
-  reset: () => void;
-}
-
-export default function ErrorBoundary({ error, reset }: ErrorBoundaryProps) {
-  useEffect(() => {
-    // Log error to monitoring service
-    console.error("Error:", error);
-  }, [error]);
-
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-      <h2 className="text-2xl font-bold">Something went wrong!</h2>
-      <p className="text-muted-foreground">{error.message}</p>
-      <Button onClick={reset}>Try again</Button>
-    </div>
-  );
-}
-```
-
-## TypeScript Types
-
-```typescript
-// types/index.ts
-
-// Base entity with common fields
-interface BaseEntity {
-  id: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// User
-export interface User extends BaseEntity {
-  email: string;
-  name: string | null;
-  avatarUrl: string | null;
-  githubId: string;
-  role: "USER" | "ADMIN";
-  tier: "FREE" | "PRO" | "TEAM";
-}
-
-// Space
-export interface Space extends BaseEntity {
-  name: string;
-  slug: string;
-  description: string | null;
-  userId: string;
-  cpuLimit: string;
-  memoryLimit: string;
-  storageLimit: string;
-  _count?: {
-    projects: number;
-  };
-}
-
-export interface CreateSpaceInput {
-  name: string;
-  description?: string;
-}
-
-export interface UpdateSpaceInput {
-  name?: string;
-  description?: string;
-}
-
-// Project
-export interface Project extends BaseEntity {
-  name: string;
-  description: string | null;
-  spaceId: string;
-  _count?: {
-    services: number;
-  };
-}
-
-// Service
-export interface Service extends BaseEntity {
-  name: string;
-  appName: string;
-  description: string | null;
-  projectId: string;
-  sourceType: "DOCKER_IMAGE" | "GITHUB_REPO" | "SCAFFOLD";
-  dockerImage: string | null;
-  replicas: number;
-  port: number;
-  status: ServiceStatus;
-}
-
-export type ServiceStatus =
-  | "IDLE"
-  | "PENDING"
-  | "DEPLOYING"
-  | "RUNNING"
-  | "STOPPED"
-  | "ERROR"
-  | "SCALING";
-
-// API Error
-export interface ApiErrorResponse {
-  statusCode: number;
-  error: string;
-  message: string;
-  code: string;
-  details?: Record<string, unknown>;
-}
-```
-
-## Import Conventions
-
-Use path aliases:
-
-```typescript
-// Good
-import { Button } from "@/components/ui/button";
-import { useSpaces } from "@/features/spaces/hooks/use-spaces";
-import { api } from "@/lib/api";
-import type { Space } from "@/types";
-
-// Bad
-import { Button } from "../../../components/ui/button";
-```
-
-tsconfig.json paths:
-
-```json
-{
-  "compilerOptions": {
-    "paths": {
-      "@/*": ["./src/*"]
-    }
-  }
-}
-```
-
-## Naming Conventions
-
-| Type            | Convention                        | Example             |
-| --------------- | --------------------------------- | ------------------- |
-| Component files | kebab-case                        | `space-card.tsx`    |
-| Component names | PascalCase                        | `SpaceCard`         |
-| Hook files      | kebab-case with `use-` prefix     | `use-spaces.ts`     |
-| Hook names      | camelCase with `use` prefix       | `useSpaces`         |
-| Service files   | kebab-case with `.service` suffix | `spaces.service.ts` |
-| Store files     | kebab-case with `.store` suffix   | `auth.store.ts`     |
-| Type files      | kebab-case                        | `index.ts`          |
-| Utility files   | kebab-case                        | `format-date.ts`    |
-
-## Client vs Server Components
-
-- Default to Server Components
-- Use `'use client'` directive only when needed:
-  - Using hooks (useState, useEffect, etc.)
-  - Using browser APIs
-  - Using event handlers
-  - Using React Query hooks
-
-```typescript
-// Server Component (default) - no directive needed
-export default function SpacesPage() {
-  return <SpaceList />;
-}
-
-// Client Component - needs directive
-("use client");
-
-import { useSpaces } from "../hooks/use-spaces";
-
-export function SpaceList() {
-  const { data } = useSpaces();
-  // ...
-}
-```
+**Rule:** Server data goes to React Query, UI state goes to Zustand.

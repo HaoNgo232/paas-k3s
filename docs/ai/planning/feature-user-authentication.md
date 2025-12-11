@@ -81,3 +81,62 @@ description: Phân chia công việc thành các nhiệm vụ khả thi và ư�
   - _Giảm thiểu:_ Sử dụng biến môi trường cho các URL callback.
 - **Rủi ro:** Vấn đề CORS giữa Frontend (3000) và Backend (3001).
   - _Giảm thiểu:_ Cấu hình CORS trong `main.ts` của NestJS.
+- **Rủi ro:** XSS attack có thể đánh cắp JWT token từ accessible cookies.
+  - _Giảm thiểu MVP:_ 
+    - Sử dụng Secure + SameSite flags
+    - Next.js built-in XSS protection
+    - Input sanitization
+  - _Giảm thiểu Dài hạn:_ Migration sang HttpOnly cookies (xem Security Enhancement Plan)
+
+## Security Enhancement Plan (Post-MVP)
+
+**Kế hoạch nâng cấp bảo mật sau MVP:**
+
+### Current State: Accessible Cookie + Bearer Token
+
+**✅ Lợi ích:**
+- Đơn giản, chuẩn REST API
+- Dễ dàng support multi-client (web, mobile, CLI)
+- Authorization header là industry standard
+- Dễ debug và test
+
+**⚠️ Trade-off:**
+- JWT token có thể bị XSS attack đánh cắp
+- Cần dựa vào Next.js built-in protections
+
+### Future State: HttpOnly Cookie + Dual Auth Mode
+
+**🎯 Migration Path (Giai đoạn nâng cao):**
+
+#### Phase 1: Dual Auth Support (Tương thích ngược)
+- [ ] **Backend:** Support cả Bearer token VÀ Cookie-based auth
+  ```typescript
+  // JwtAuthGuard checks:
+  // 1. Authorization: Bearer {token} (mobile/CLI)
+  // 2. Cookie: accessToken={token} (web HttpOnly)
+  ```
+- [ ] **Frontend:** Flag môi trường để toggle giữa 2 modes
+- [ ] **Testing:** Verify cả 2 auth flows hoạt động
+
+#### Phase 2: HttpOnly Migration (Web only)
+- [ ] **Backend:** Set HttpOnly cookie trong auth callback response
+  ```typescript
+  res.cookie('accessToken', token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000
+  });
+  ```
+- [ ] **Frontend:** Remove manual token storage
+- [ ] **Axios:** Configure `withCredentials: true` để auto-send cookies
+- [ ] **Testing:** E2E test với HttpOnly cookies
+
+#### Phase 3: Token Refresh (Advanced)
+- [ ] **Backend:** Implement refresh token mechanism
+- [ ] **Frontend:** Auto-refresh trước khi token expire
+- [ ] **Security:** Refresh token stored in HttpOnly cookie
+
+**⏱️ Estimated Timeline:** 4-6 giờ (sau khi MVP stable)
+
+**📌 Priority:** Medium (sau features F02-F05)

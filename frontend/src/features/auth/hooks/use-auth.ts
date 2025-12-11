@@ -1,43 +1,75 @@
-"use client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect } from "react";
+import { authService } from "@/features/auth/services/auth.service";
+import { useAuthStore } from "@/features/auth/stores/auth-store";
+import { QUERY_KEYS, ROUTES } from "@/lib/constants";
 
-import React, { createContext, useContext } from "react";
-import { AuthContextType, User } from "../types";
+export function useAuth() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { isAuthenticated, isInitialized, setToken, clearToken, initialize } =
+    useAuthStore();
 
-/**
- * Auth Context
- * Cung cấp trạng thái xác thực cho toàn bộ ứng dụng
- */
-export const AuthContext = createContext<AuthContextType | undefined>(
-  undefined,
-);
+  // Initialize store khi mount (chỉ chạy 1 lần)
+  useEffect(() => {
+    if (!isInitialized) {
+      initialize();
+    }
+  }, [isInitialized, initialize]);
 
-/**
- * useAuth Hook
- * Hook để sử dụng Auth Context
- * @throws Error nếu được sử dụng bên ngoài AuthProvider
- */
-export function useAuth(): AuthContextType {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-}
+  // Query: Fetch User Profile
+  const {
+    data: user,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: QUERY_KEYS.AUTH.ME,
+    queryFn: () => authService.getMe(),
+    enabled: isAuthenticated && isInitialized, // Chỉ fetch khi đã có token VÀ đã initialize
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 phút
+    gcTime: 10 * 60 * 1000, // 10 phút (cacheTime renamed to gcTime trong v5)
+  });
 
-/**
- * useUser Hook
- * Hook để lấy thông tin người dùng hiện tại
- */
-export function useUser(): User | null {
-  const { user } = useAuth();
-  return user;
-}
+  // Mutation: Logout
+  const logoutMutation = useMutation({
+    mutationFn: () => authService.logout(),
+    onSuccess: () => {
+      clearToken();
+      queryClient.clear(); // Clear toàn bộ cache
+      router.push(ROUTES.LOGIN);
+    },
+    onError: (error) => {
+      // Vẫn clear token nếu logout API lỗi (force logout)
+      console.error("Logout mutation failed:", error);
+      clearToken();
+      queryClient.clear();
+      router.push(ROUTES.LOGIN);
+    },
+  });
 
-/**
- * useIsAuthenticated Hook
- * Hook để kiểm tra xem người dùng có được xác thực hay không
- */
-export function useIsAuthenticated(): boolean {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated;
+  const loginWithToken = useCallback(
+    (token: string) => {
+      setToken(token);
+      // Fetch user profile ngay lập tức
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AUTH.ME });
+    },
+    [setToken, queryClient],
+  );
+
+  const logout = useCallback(async () => {
+    await logoutMutation.mutateAsync();
+  }, [logoutMutation]);
+
+  return {
+    user: user ?? null,
+    isLoading: isLoading && isAuthenticated,
+    isInitialized,
+    isAuthenticated: isAuthenticated && !isError && !!user,
+    error: isError ? error : null,
+    loginWithToken,
+    logout,
+  };
 }

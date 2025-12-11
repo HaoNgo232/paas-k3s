@@ -11,11 +11,7 @@ export interface User {
   role: string;
 }
 
-export interface AuthContextType {
-  user: User | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  login(email: string, password: string): Promise<void>;
-  logout(): Promise<void>;
-  checkAuth(): Promise<void>;
+export interface ApiResponse<T> {
+  data: T;
+  message?: string;
 }

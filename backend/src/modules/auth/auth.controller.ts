@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '@modules/auth/guards/jwt-auth.guard';
 import { JwtPayload } from '@modules/auth/interfaces/jwt-payload.interface';
 import { UserProfileDto } from '@modules/auth/dto/auth.dto';
 import type { User } from '@modules/auth/interfaces/user.interface';
+import { FRONTEND_ROUTES, buildRedirectUrl } from '@common/constants';
 
 /**
  * Auth Controller
@@ -58,17 +59,26 @@ export class AuthController {
       const loginResponse = await this.authService.login(user);
 
       // Chuyển hướng về frontend với token
-      const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-      const redirectUrl = `${frontendUrl}/auth/callback?token=${loginResponse.accessToken}`;
+      const frontendUrl =
+        this.configService.get<string>('FRONTEND_URL') ||
+        'http://localhost:3000';
+      const redirectUrl = buildRedirectUrl(
+        frontendUrl,
+        FRONTEND_ROUTES.CALLBACK,
+        { token: loginResponse.accessToken },
+      );
 
       res.redirect(redirectUrl);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-      res.redirect(
-        `${frontendUrl}/login?error=${encodeURIComponent(errorMessage)}`,
-      );
+      const frontendUrl =
+        this.configService.get<string>('FRONTEND_URL') ||
+        'http://localhost:3000';
+      const redirectUrl = buildRedirectUrl(frontendUrl, FRONTEND_ROUTES.LOGIN, {
+        error: errorMessage,
+      });
+      res.redirect(redirectUrl);
     }
   }
 

@@ -233,3 +233,13 @@ Follow the MVP features in order (F01 → F12). Each feature should be completed
 - All API endpoints must have input validation
 - All database operations must handle errors properly
 - K8s operations must have timeout and retry logic
+
+## ONE Pattern for ALL Features
+
+**Backend:** Module → Controller (HTTP only) → Service (Logic) → DTO (Validation)
+**Frontend:** Service (API) → Hook (React Query) → Component (UI only)
+
+See detailed patterns in:
+
+- `.github/instructions/backend.instructions.md`
+- `.github/instructions/frontend.instructions.md`
