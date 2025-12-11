@@ -1,0 +1,384 @@
+---
+globs: ["backend/**"]
+---
+
+# Backend Pattern - NestJS + Prisma + K8s
+
+## MỘT Pattern cho TẤT CẢ Features
+
+Mọi feature đều tuân theo cấu trúc này:
+
+```
+src/modules/{feature}/
+├── {feature}.module.ts          # Khai báo module
+├── {feature}.controller.ts      # HTTP endpoints
+├── {feature}.service.ts         # Business logic
+└── dto/
+    ├── create-{feature}.dto.ts  # Validation cho create
+    └── update-{feature}.dto.ts  # Validation cho update
+```
+
+## 1. Module Pattern
+
+```typescript
+@Module({
+  imports: [PrismaModule, KubernetesModule], // Dependencies cần dùng
+  controllers: [FeatureController],
+  providers: [FeatureService],
+  exports: [FeatureService], // Export nếu module khác cần dùng
+})
+export class FeatureModule {}
+```
+
+## 2. Controller Pattern
+
+**Rules:**
+
+- Chỉ handle HTTP: nhận request → gọi service → trả response
+- Không chứa business logic
+- Dùng DTO để validate input
+- Format response theo chuẩn: \`{ data, message? }\`
+
+```typescript
+@Controller("spaces")
+@UseGuards(JwtAuthGuard)
+export class SpacesController {
+  constructor(private readonly service: SpacesService) {}
+
+  @Post()
+  async create(@CurrentUser() user: User, @Body() dto: CreateSpaceDto) {
+    const space = await this.service.create(user.id, dto);
+    return { data: space, message: "Space created successfully" };
+  }
+
+  @Get()
+  async findAll(@CurrentUser() user: User) {
+    const spaces = await this.service.findAll(user.id);
+    return { data: spaces };
+  }
+
+  @Get(":id")
+  async findOne(@CurrentUser() user: User, @Param("id") id: string) {
+    const space = await this.service.findOne(user.id, id);
+    return { data: space };
+  }
+
+  @Patch(":id")
+  async update(
+    @CurrentUser() user: User,
+    @Param("id") id: string,
+    @Body() dto: UpdateSpaceDto,
+  ) {
+    const space = await this.service.update(user.id, id, dto);
+    return { data: space, message: "Updated successfully" };
+  }
+
+  @Delete(":id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@CurrentUser() user: User, @Param("id") id: string) {
+    await this.service.remove(user.id, id);
+  }
+}
+```
+
+## 3. Service Pattern
+
+**Rules:**
+
+- Chứa ALL business logic
+- Validate rules, check quota, permissions
+- Gọi Prisma (database) và KubernetesService
+- Throw custom exceptions (không dùng generic Error)
+
+```typescript
+@Injectable()
+export class SpacesService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly k8s: KubernetesService,
+  ) {}
+
+  async create(userId: string, dto: CreateSpaceDto) {
+    // 1. Validate business rules
+    const count = await this.prisma.space.count({ where: { userId } });
+    if (count >= 5) throw new SpaceQuotaExceededException();
+
+    // 2. Generate K8s-friendly slug
+    const slug = \`space-\${userId}-\${dto.name}\`.toLowerCase();
+
+    // 3. Database + K8s trong transaction
+    return this.prisma.$transaction(async (tx) => {
+      const space = await tx.space.create({
+        data: { ...dto, slug, userId },
+      });
+
+      await this.k8s.createNamespace(slug, {
+        "paas.io/space-id": space.id,
+      });
+
+      return space;
+    });
+  }
+
+  async findAll(userId: string) {
+    return this.prisma.space.findMany({
+      where: { userId },
+      include: { projects: true },
+    });
+  }
+
+  async findOne(userId: string, id: string) {
+    const space = await this.prisma.space.findFirst({
+      where: { id, userId },
+    });
+    if (!space) throw new SpaceNotFoundException(id);
+    return space;
+  }
+
+  async update(userId: string, id: string, dto: UpdateSpaceDto) {
+    await this.findOne(userId, id); // Check ownership
+    return this.prisma.space.update({ where: { id }, data: dto });
+  }
+
+  async remove(userId: string, id: string) {
+    const space = await this.findOne(userId, id);
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.space.delete({ where: { id } });
+      await this.k8s.deleteNamespace(space.slug);
+    });
+  }
+}
+```
+
+## 4. DTO Pattern
+
+**Rules:**
+
+- Dùng \`class-validator\` decorators
+- Một DTO cho create, một DTO cho update
+
+```typescript
+export class CreateSpaceDto {
+  @IsString()
+  @MinLength(3)
+  @MaxLength(50)
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+}
+
+export class UpdateSpaceDto {
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+}
+```
+
+## 5. Custom Exceptions
+
+Tạo file \`{feature}/exceptions/index.ts\`:
+
+```typescript
+import { NotFoundException, ConflictException } from "@nestjs/common";
+
+export class SpaceNotFoundException extends NotFoundException {
+  constructor(id: string) {
+    super({
+      statusCode: 404,
+      error: "Not Found",
+      message: \`Space "\${id}" not found\`,
+      code: "SPACE_NOT_FOUND",
+    });
+  }
+}
+
+export class SpaceQuotaExceededException extends ConflictException {
+  constructor() {
+    super({
+      statusCode: 403,
+      error: "Forbidden",
+      message: "Space quota exceeded",
+      code: "SPACE_QUOTA_EXCEEDED",
+    });
+  }
+}
+```
+
+## 6. Kubernetes Integration
+
+**Rules:**
+
+- Dùng builder pattern cho complex resources
+- Wrap API calls trong try-catch
+- Throw domain-specific exceptions
+
+```typescript
+async createDeployment(namespace: string, config: DeploymentConfig) {
+  const deployment = new DeploymentBuilder()
+    .setName(config.name)
+    .setImage(config.image)
+    .setReplicas(config.replicas)
+    .build();
+
+  try {
+    await this.appsApi.createNamespacedDeployment(namespace, deployment);
+  } catch (error) {
+    throw new K8sDeploymentCreateFailedException(config.name, error.message);
+  }
+}
+```
+
+## 7. Path Aliases - BẮT BUỘC
+
+**LUÔN dùng absolute paths với \`@/*\` thay vì relative paths.**
+
+❌ **SAI (Relative paths):**
+
+```typescript
+import { PrismaService } from "../../prisma/prisma.service";
+import { SpaceService } from "../space/space.service";
+import { CreateProjectDto } from "./dto/create-project.dto";
+```
+
+✅ **ĐÚNG (Absolute paths):**
+
+```typescript
+import { PrismaService } from "@prisma/prisma.service";
+import { SpaceService } from "@modules/space/space.service";
+import { CreateProjectDto } from "@modules/project/dto/create-project.dto";
+```
+
+**Lợi ích:**
+
+- Code dễ đọc hơn (biết ngay file ở đâu)
+- Dễ refactor (move files không bị break imports)
+- Autocomplete tốt hơn trong IDE
+
+**Available aliases:**
+
+- \`@/*\` - src folder
+- \`@config/*\` - src/config
+- \`@modules/*\` - src/modules
+- \`@common/*\` - src/common
+- \`@kubernetes/*\` - src/kubernetes
+- \`@prisma/*\` - src/prisma
+
+## 8. Type Guard Pattern - BẮT BUỘC cho External Data
+
+**KHÔNG dùng type assertion (\`as\`) cho data từ ngoài (API, JWT, user input).**
+
+❌ **SAI (Unsafe type assertion):**
+
+```typescript
+async verify(token: string): Promise<JwtPayload> {
+  const { payload } = await jose.jwtVerify(token, this.secret);
+  return payload as JwtPayload; // ❌ Nguy hiểm! Không kiểm tra runtime
+}
+
+getCurrentUser(@Req() req: Request) {
+  const payload = req.user as JwtPayload; // ❌ Tin tưởng mù quáng!
+  return this.service.getUserFromToken(payload);
+}
+```
+
+✅ **ĐÚNG (Type guard với runtime validation):**
+
+**Bước 1: Tạo Type Guard**
+
+```typescript
+// guards/jwt-payload.guard.ts
+import { JwtPayload } from "@modules/auth/interfaces/jwt-payload.interface";
+
+/**
+ * Type Guard cho JwtPayload
+ * Kiểm tra runtime để đảm bảo payload có đầy đủ fields
+ */
+export function isJwtPayload(payload: unknown): payload is JwtPayload {
+  if (typeof payload !== "object" || payload === null) {
+    return false;
+  }
+
+  const obj = payload as Record<string, unknown>;
+
+  // Kiểm tra required fields
+  return (
+    typeof obj.sub === "string" &&
+    typeof obj.email === "string" &&
+    (obj.name === null || typeof obj.name === "string") &&
+    (obj.avatarUrl === null || typeof obj.avatarUrl === "string") &&
+    typeof obj.role === "string"
+  );
+}
+
+/**
+ * Validate và cast payload an toàn
+ * @throws Error nếu payload không hợp lệ
+ */
+export function validateJwtPayload(payload: unknown): JwtPayload {
+  if (!isJwtPayload(payload)) {
+    throw new Error(
+      "Invalid JWT payload structure: missing or invalid required fields",
+    );
+  }
+  return payload;
+}
+```
+
+**Bước 2: Dùng Type Guard**
+
+```typescript
+// jwt.service.ts
+import { validateJwtPayload } from '@modules/auth/guards/jwt-payload.guard';
+
+async verify(token: string): Promise<JwtPayload> {
+  const { payload } = await jose.jwtVerify(token, this.secret);
+  return validateJwtPayload(payload); // ✅ Runtime validation!
+}
+
+// auth.controller.ts
+import { validateJwtPayload } from '@modules/auth/guards/jwt-payload.guard';
+
+getCurrentUser(@Req() req: Request) {
+  if (!req.user) {
+    throw new UnauthorizedException('User not found');
+  }
+
+  const payload = validateJwtPayload(req.user); // ✅ Safe!
+  return this.service.getUserFromToken(payload);
+}
+```
+
+**Khi nào cần Type Guard:**
+
+- ✅ Data từ JWT token
+- ✅ Data từ external API
+- ✅ User input (sau khi validate với DTO)
+- ✅ Data từ database (nếu không chắc chắn structure)
+- ❌ Internal data (service → service) - không cần
+
+**Lợi ích:**
+
+- **Runtime Safety**: Phát hiện invalid data structure ngay lập tức
+- **Early Error Detection**: Fail fast với clear error message
+- **Type Safety**: TypeScript + runtime validation
+- **Bug Prevention**: Phát hiện bug trong test cases
+
+## Checklist khi tạo Feature mới
+
+- [ ] Tạo module, controller, service, dto theo pattern trên
+- [ ] Controller chỉ handle HTTP, không có logic
+- [ ] Service có ALL business logic
+- [ ] Dùng custom exceptions, không dùng generic Error
+- [ ] DTO validate input với class-validator
+- [ ] Response format: \`{ data, message? }\`
+- [ ] **Dùng Type Guard cho external data (JWT, API response, user input)**
+- [ ] **Dùng absolute paths \`@/*\` thay vì relative paths**
+- [ ] Viết tests cho type guards (nếu có)
+- [ ] Kiểm tra lint và tests pass
