@@ -20,24 +20,24 @@ description: Phân chia công việc thành các nhiệm vụ khả thi và ư�
 
 ### Giai đoạn 1: Triển khai Backend
 
-- [ ] **Task 1.1: Cài đặt Dependencies**
+- [x] **Task 1.1: Cài đặt Dependencies**
   - Cài đặt `@nestjs/passport`, `passport`, `passport-github2`, `jose`, `@types/passport-github2`.
-- [ ] **Task 1.2: Cấu hình Môi trường**
+- [x] **Task 1.2: Cấu hình Môi trường**
   - Thêm `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `JWT_SECRET`, `FRONTEND_URL` vào `.env`.
-- [ ] **Task 1.3: Triển khai Auth Module & Service**
+- [x] **Task 1.3: Triển khai Auth Module & Service**
   - Tạo `AuthModule`, `AuthService`.
   - Triển khai logic `validateUser` (upsert user).
   - Triển khai logic `login` (ký JWT dùng `jose`).
-- [ ] **Task 1.4: Triển khai GitHub Strategy**
+- [x] **Task 1.4: Triển khai GitHub Strategy**
   - Tạo class `GithubStrategy`.
-- [ ] **Task 1.5: Triển khai JWT Guard (Custom)**
+- [x] **Task 1.5: Triển khai JWT Guard (Custom)**
   - Tạo `JwtAuthGuard` sử dụng `jose` để verify token.
-- [ ] **Task 1.6: Triển khai Auth Controller**
+- [x] **Task 1.6: Triển khai Auth Controller**
   - Tạo các endpoint `/auth/github`, `/auth/github/callback`, `/auth/me`.
 
 ### Giai đoạn 2: Triển khai Frontend
 
-- [ ] **Task 2.1: Thiết lập Auth Context**
+- [x] **Task 2.1: Thiết lập Auth Context**
   - Tạo context `AuthProvider`.
   - Triển khai trạng thái `login`, `logout`, `user`.
 - [ ] **Task 2.2: Tạo Trang Đăng nhập**

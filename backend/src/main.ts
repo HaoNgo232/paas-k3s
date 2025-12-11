@@ -35,7 +35,7 @@ async function bootstrap() {
   // Kích hoạt ClassSerializerInterceptor toàn cục để áp dụng @Exclude/@Expose cho response
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
-  console.log('Application is running on: ', app.getUrl());
   await app.listen(process.env.PORT ?? 3001);
+  console.log('Application is running on port:', process.env.PORT ?? 3001);
 }
 void bootstrap();

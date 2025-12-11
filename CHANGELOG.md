@@ -35,6 +35,29 @@ và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [0.3.0] - 2025-12-11
+
+### Added
+
+- **Backend Authentication (F01)**:
+  - Implemented `AuthModule` with `passport-github2` and `jose` (JWT).
+  - Added `GithubStrategy` for OAuth flow.
+  - Added `JwtAuthGuard` for stateless authentication.
+  - Added `AuthService` and `AuthController` with endpoints: `/auth/github`, `/callback`, `/me`.
+  - Implemented **Secure by Default** DTOs using `class-transformer` (`@Exclude`/`@Expose`).
+- **Frontend Authentication**:
+  - Added `AuthProvider` context and `useAuth` hook.
+- **Infrastructure**:
+  - Added `module-alias` configuration for production builds.
+  - Configured `ConfigModule` with `expandVariables: true` for nested env vars.
+
+### Changed
+
+- **Architecture**:
+  - Refactored `User` interface to use **Facade Pattern** (re-exporting from `@prisma/client`).
+  - Standardized `PrismaService` to use default `prisma-client-js` provider in `node_modules`.
+  - Updated `tsconfig.json` to include `test` folder and optimize paths.
+
 ## [0.2.1] - 2025-12-11
 
 ### 🔧 Cấu hình VS Code & TypeScript Path Aliases Optimization

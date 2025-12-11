@@ -3,8 +3,8 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-github2';
 import type { VerifyCallback } from 'passport-oauth2';
 import { ConfigService } from '@nestjs/config';
-import { AuthService } from '../services/auth.service';
-import { GithubProfile, User } from '../interfaces/user.interface';
+import { AuthService } from '@modules/auth/services/auth.service';
+import { GithubProfile, User } from '@modules/auth/interfaces/user.interface';
 
 /**
  * GitHub OAuth Strategy
@@ -18,11 +18,11 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
   ) {
     const clientID = configService.get<string>('GITHUB_CLIENT_ID');
     const clientSecret = configService.get<string>('GITHUB_CLIENT_SECRET');
-    const callbackURL = configService.get<string>('CALLBACK_URL');
+    const callbackURL = configService.get<string>('GITHUB_CALLBACK_URL');
 
     if (!clientID || !clientSecret || !callbackURL) {
       throw new Error(
-        'Missing GitHub OAuth configuration: GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, or CALLBACK_URL',
+        'Missing GitHub OAuth configuration: GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, or GITHUB_CALLBACK_URL',
       );
     }
 
