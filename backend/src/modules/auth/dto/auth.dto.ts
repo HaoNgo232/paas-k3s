@@ -13,7 +13,7 @@ import { IsEmail, IsEnum, IsString } from 'class-validator';
 export class LoginResponseDto {
   @Expose()
   @IsString()
-  accessToken: string;
+  accessToken!: string;
 
   @Expose()
   @IsString()
@@ -28,25 +28,25 @@ export class LoginResponseDto {
 export class UserProfileDto {
   @Expose()
   @IsString()
-  id: string;
+  id!: string;
 
   @Expose()
   @IsEmail()
-  email: string;
+  email!: string;
 
   @Expose()
   @IsString()
-  name: string | null;
+  name!: string | null;
 
   @Expose()
   @IsString()
-  avatarUrl: string | null;
+  avatarUrl!: string | null;
 
   @Expose()
   @IsEnum(UserRole)
-  role: UserRole;
+  role!: UserRole;
 
   @Expose()
   @IsEnum(ServiceTier)
-  tier: ServiceTier;
+  tier!: ServiceTier;
 }
