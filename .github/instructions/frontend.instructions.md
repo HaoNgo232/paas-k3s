@@ -246,6 +246,129 @@ export function SpaceCard({ space }: SpaceCardProps) {
 
 ---
 
+## 4.1. Page Component Pattern - BẮT BUỘC
+
+**QUAN TRỌNG:** Tất cả `page.tsx` trong Next.js App Router PHẢI tuân theo pattern này.
+
+### Rules:
+
+- **Page.tsx**: Chỉ là wrapper đơn giản, import component từ `features/`
+- **Component**: Chứa toàn bộ logic và UI, nằm trong `features/{feature}/components/`
+- **Lợi ích**: Tách biệt rõ ràng, dễ test, dễ maintain, tái sử dụng được
+
+### ❌ SAI (Logic trong page.tsx):
+
+```typescript
+// app/(auth)/login/page.tsx
+"use client";
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+
+export default function LoginPage() {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = () => {
+    setIsLoading(true);
+    // ... logic
+  };
+
+  return (
+    <div>
+      <Button onClick={handleLogin}>Login</Button>
+    </div>
+  );
+}
+```
+
+### ✅ ĐÚNG (Tách component riêng):
+
+**Bước 1: Tạo component trong features/**
+
+```typescript
+// features/auth/components/login-form.tsx
+"use client";
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+
+export function LoginForm() {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = () => {
+    setIsLoading(true);
+    // ... logic
+  };
+
+  return (
+    <div>
+      <Button onClick={handleLogin}>Login</Button>
+    </div>
+  );
+}
+```
+
+**Bước 2: Page.tsx chỉ import và render**
+
+```typescript
+// app/(auth)/login/page.tsx
+import { LoginForm } from "@/features/auth/components/login-form";
+
+export default function LoginPage() {
+  return <LoginForm />;
+}
+```
+
+### Ví dụ thực tế:
+
+**Dashboard Page:**
+
+```typescript
+// app/(dashboard)/dashboard/page.tsx
+import { DashboardContent } from "@/features/dashboard/components/dashboard-content";
+
+export default function DashboardPage() {
+  return <DashboardContent />;
+}
+```
+
+**Callback Page (với Suspense):**
+
+```typescript
+// app/(auth)/callback/page.tsx
+import { Suspense } from "react";
+import { AuthCallbackContent } from "@/features/auth/components/auth-callback-content";
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AuthCallbackContent />
+    </Suspense>
+  );
+}
+```
+
+### Naming Convention:
+
+- Component trong `features/`: `{FeatureName}Content` hoặc `{FeatureName}Form`
+- Ví dụ: `LoginForm`, `DashboardContent`, `AuthCallbackContent`
+
+### Khi nào cần tách component:
+
+- ✅ Page có logic (state, hooks, event handlers)
+- ✅ Page có UI phức tạp (nhiều elements)
+- ✅ Page cần test riêng
+- ❌ Page chỉ có UI tĩnh đơn giản (có thể giữ nguyên)
+
+### Checklist khi tạo Page mới:
+
+- [ ] Logic và UI đã tách ra component trong `features/{feature}/components/`
+- [ ] Page.tsx chỉ import và render component
+- [ ] Component có tên rõ ràng (theo naming convention)
+- [ ] Nếu cần Suspense/ErrorBoundary, giữ trong page.tsx
+
+---
+
 ## 5. Constants Layer
 
 **Centralize tất cả hardcoded values:**
@@ -524,6 +647,7 @@ export function CreateSpaceForm() {
 - [ ] Store cho UI state (search, filters, không lưu server data)
 - [ ] Container component (connect hooks)
 - [ ] Presentational component (pure UI)
+- [ ] **Page component pattern: Logic trong `features/{feature}/components/`, page.tsx chỉ import và render**
 - [ ] Add routes/endpoints/keys vào `lib/constants.ts`
 - [ ] **Dùng Type Guard cho API response data**
 - [ ] **Dùng absolute paths `@/*` thay vì relative paths**
