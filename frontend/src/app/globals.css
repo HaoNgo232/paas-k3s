@@ -45,83 +45,106 @@
 
 :root {
   --radius: 0.625rem;
-  /* Light Mode (Clean, Professional) */
-  --background: #ffffff;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
+  /* Light Mode (Professional SaaS Theme - Based on UI/UX Pro Max recommendations) */
+  /* Style: Minimalism & Swiss Style - Clean, spacious, high contrast, WCAG AAA */
+  /* Color Palette: Trust Blue + Professional Grey */
+
+  /* Base Colors - SaaS Professional Palette */
+  --background: #f8fafc; /* Slate 50 - Soft white, easier on eyes than pure white */
+  --foreground: #1e293b; /* Slate 800 - High contrast text (WCAG AAA) */
+
+  /* Card & Surfaces */
+  --card: #ffffff; /* Pure white for cards for clear separation */
+  --card-foreground: #1e293b; /* Slate 800 */
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #4f46e5; /* Indigo 600 */
+  --popover-foreground: #1e293b;
+
+  /* Primary - Trust Blue (SaaS Standard) */
+  --primary: #2563eb; /* Blue 600 - Trust Blue, recommended for SaaS platforms */
   --primary-foreground: #ffffff;
+
+  /* Secondary - Cyan for information/secondary actions */
   --secondary: #06b6d4; /* Cyan 500 */
   --secondary-foreground: #ffffff;
+
+  /* Muted - Subtle backgrounds and secondary text */
   --muted: #f1f5f9; /* Slate 100 */
-  --muted-foreground: #64748b; /* Slate 500 */
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
-  --destructive: #ef4444;
-  --border: #e2e8f0; /* Slate 200 */
+  --muted-foreground: #475569; /* Slate 600 - Better contrast than 500 (WCAG AAA) */
+
+  /* Accent */
+  --accent: #f1f5f9; /* Slate 100 */
+  --accent-foreground: #1e293b;
+
+  /* Destructive */
+  --destructive: #ef4444; /* Red 500 */
+  --destructive-foreground: #ffffff;
+
+  /* Borders & Inputs */
+  --border: #e2e8f0; /* Slate 200 - Visible borders in light mode */
   --input: #e2e8f0;
-  --ring: #4f46e5;
-  --chart-1: #4f46e5;
-  --chart-2: #06b6d4;
-  --chart-3: #10b981;
-  --chart-4: #f59e0b;
-  --chart-5: #64748b;
-  --sidebar: #f8fafc;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #4f46e5;
+  --ring: #2563eb; /* Blue 600 - Focus ring matches primary */
+
+  /* Charts */
+  --chart-1: #2563eb; /* Blue 600 */
+  --chart-2: #06b6d4; /* Cyan 500 */
+  --chart-3: #10b981; /* Emerald 500 */
+  --chart-4: #f59e0b; /* Amber 500 */
+  --chart-5: #64748b; /* Slate 500 */
+
+  /* Sidebar */
+  --sidebar: #f8fafc; /* Slate 50 - Matches background */
+  --sidebar-foreground: #1e293b;
+  --sidebar-primary: #2563eb; /* Blue 600 */
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #0f172a;
+  --sidebar-accent-foreground: #1e293b;
   --sidebar-border: #e2e8f0;
-  --sidebar-ring: #4f46e5;
+  --sidebar-ring: #2563eb;
 }
 
 .dark {
   /* Deep Space Glass Theme */
-  --background: #0F172A; /* Slate 900 */
-  --foreground: #F8FAFC; /* Slate 50 */
-  
-  --card: #1E293B; /* Slate 800 */
-  --card-foreground: #F8FAFC;
-  
-  --popover: #1E293B;
-  --popover-foreground: #F8FAFC;
-  
-  --primary: #6366F1; /* Indigo 500 */
-  --primary-foreground: #FFFFFF;
-  
-  --secondary: #06B6D4; /* Cyan 500 */
-  --secondary-foreground: #FFFFFF;
-  
-  --muted: #1E293B;
-  --muted-foreground: #94A3B8; /* Slate 400 */
-  
-  --accent: #1E293B;
-  --accent-foreground: #F8FAFC;
-  
-  --destructive: #F43F5E; /* Rose 500 */
-  
+  --background: #0f172a; /* Slate 900 */
+  --foreground: #f8fafc; /* Slate 50 */
+
+  --card: #1e293b; /* Slate 800 */
+  --card-foreground: #f8fafc;
+
+  --popover: #1e293b;
+  --popover-foreground: #f8fafc;
+
+  --primary: #6366f1; /* Indigo 500 */
+  --primary-foreground: #ffffff;
+
+  --secondary: #06b6d4; /* Cyan 500 */
+  --secondary-foreground: #ffffff;
+
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8; /* Slate 400 */
+
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+
+  --destructive: #f43f5e; /* Rose 500 */
+
   --border: #334155; /* Slate 700 */
-  --input: #1E293B;
-  --ring: #6366F1;
-  
-  --chart-1: #6366F1;
-  --chart-2: #06B6D4;
-  --chart-3: #10B981;
-  --chart-4: #F59E0B;
-  --chart-5: #94A3B8;
-  
-  --sidebar: #0F172A;
-  --sidebar-foreground: #F8FAFC;
-  --sidebar-primary: #6366F1;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #1E293B;
-  --sidebar-accent-foreground: #F8FAFC;
+  --input: #1e293b;
+  --ring: #6366f1;
+
+  --chart-1: #6366f1;
+  --chart-2: #06b6d4;
+  --chart-3: #10b981;
+  --chart-4: #f59e0b;
+  --chart-5: #94a3b8;
+
+  --sidebar: #0f172a;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #6366f1;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #f8fafc;
   --sidebar-border: #334155;
-  --sidebar-ring: #6366F1;
+  --sidebar-ring: #6366f1;
 }
 
 @layer base {

@@ -8,6 +8,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { Github } from 'lucide-react';
 import { useState } from 'react';
 
@@ -22,7 +23,10 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+        <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
+            <div className="absolute top-4 right-4">
+                <ThemeToggle />
+            </div>
             <Card className="w-full max-w-md">
                 <CardHeader className="space-y-1 text-center">
                     <CardTitle className="text-2xl font-bold tracking-tight">
@@ -34,7 +38,7 @@ export default function LoginPage() {
                 </CardHeader>
                 <CardContent className="grid gap-4">
                     <Button
-                        variant="outline"
+                        variant="default"
                         type="button"
                         disabled={isLoading}
                         onClick={handleLogin}

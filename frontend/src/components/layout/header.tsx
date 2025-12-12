@@ -1,6 +1,7 @@
 'use client';
 
 import { UserNav } from '@/components/layout/user-nav';
+import { ThemeToggle } from '@/components/layout/theme-toggle';
 import Link from 'next/link';
 
 export function Header() {
@@ -11,6 +12,7 @@ export function Header() {
                     <Link href="/dashboard">PaaS K3s</Link>
                 </div>
                 <div className="ml-auto flex items-center space-x-4">
+                    <ThemeToggle />
                     <UserNav />
                 </div>
             </div>
