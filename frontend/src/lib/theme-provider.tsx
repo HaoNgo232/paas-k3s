@@ -14,7 +14,6 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setThemeState] = useState<Theme>('light');
-    const [mounted, setMounted] = useState(false);
 
     // Apply theme to document - memoized để tránh re-create
     const applyTheme = useCallback((newTheme: Theme) => {
@@ -32,7 +31,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const initialTheme = stored || 'light';
         setThemeState(initialTheme);
         applyTheme(initialTheme);
-        setMounted(true);
     }, [applyTheme]);
 
     // Memoized setTheme function
@@ -65,11 +63,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         [theme, setTheme, toggleTheme]
     );
 
-    // Prevent flash of wrong theme
-    if (!mounted) {
-        return <>{children}</>;
-    }
-
+    // Always render Provider to prevent "useTheme must be used within ThemeProvider" error
+    // Provider must always exist for children, even before theme is initialized from localStorage
     return (
         <ThemeContext.Provider value={contextValue}>
             {children}
