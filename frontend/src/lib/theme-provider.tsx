@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -12,61 +12,56 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// Get initial theme from localStorage synchronously to prevent flash
+function getInitialTheme(): Theme {
+    if (typeof window === 'undefined') {
+        return 'light';
+    }
+    const stored = localStorage.getItem('theme') as Theme | null;
+    return stored || 'light';
+}
+
+// Apply theme to document immediately
+function applyTheme(newTheme: Theme) {
+    if (typeof document === 'undefined') {
+        return;
+    }
+    const root = document.documentElement;
+    if (newTheme === 'dark') {
+        root.classList.add('dark');
+    } else {
+        root.classList.remove('dark');
+    }
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const [theme, setThemeState] = useState<Theme>('light');
-
-    // Apply theme to document - memoized để tránh re-create
-    const applyTheme = useCallback((newTheme: Theme) => {
-        const root = document.documentElement;
-        if (newTheme === 'dark') {
-            root.classList.add('dark');
-        } else {
-            root.classList.remove('dark');
-        }
-    }, []);
-
-    // Initialize theme from localStorage or default to light
-    useEffect(() => {
-        const stored = localStorage.getItem('theme') as Theme | null;
-        const initialTheme = stored || 'light';
-        setThemeState(initialTheme);
+    // Initialize theme from localStorage synchronously to prevent flash
+    const [theme, setThemeState] = useState<Theme>(() => {
+        const initialTheme = getInitialTheme();
+        // Apply theme immediately before first render
         applyTheme(initialTheme);
-    }, [applyTheme]);
+        return initialTheme;
+    });
 
-    // Memoized setTheme function
-    const setTheme = useCallback(
-        (newTheme: Theme) => {
-            setThemeState(newTheme);
-            localStorage.setItem('theme', newTheme);
-            applyTheme(newTheme);
-        },
-        [applyTheme]
-    );
+    // Sync theme changes to localStorage and document
+    useEffect(() => {
+        localStorage.setItem('theme', theme);
+        applyTheme(theme);
+    }, [theme]);
 
-    // Memoized toggleTheme function
-    const toggleTheme = useCallback(() => {
-        setThemeState((prevTheme) => {
-            const newTheme = prevTheme === 'light' ? 'dark' : 'light';
-            localStorage.setItem('theme', newTheme);
-            applyTheme(newTheme);
-            return newTheme;
-        });
-    }, [applyTheme]);
+    const setTheme = (newTheme: Theme) => {
+        setThemeState(newTheme);
+    };
 
-    // Memoized context value để tránh re-render không cần thiết
-    const contextValue = useMemo(
-        () => ({
-            theme,
-            setTheme,
-            toggleTheme,
-        }),
-        [theme, setTheme, toggleTheme]
-    );
+    const toggleTheme = () => {
+        const newTheme = theme === 'light' ? 'dark' : 'light';
+        setTheme(newTheme);
+    };
 
-    // Always render Provider to prevent "useTheme must be used within ThemeProvider" error
-    // Provider must always exist for children, even before theme is initialized from localStorage
+    // Always render Provider to ensure useTheme() works
+    // Theme is initialized synchronously, so no flash occurs
     return (
-        <ThemeContext.Provider value={contextValue}>
+        <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
             {children}
         </ThemeContext.Provider>
     );
@@ -79,4 +74,3 @@ export function useTheme() {
     }
     return context;
 }
-
