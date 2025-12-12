@@ -76,6 +76,7 @@ describe('AuthController', () => {
   describe('githubAuthRedirect', () => {
     let mockRequest: Partial<Request>;
     let mockResponse: Partial<Response>;
+    let loggerErrorSpy: jest.SpyInstance;
 
     const mockUser: User = {
       id: 'user-123',
@@ -100,6 +101,12 @@ describe('AuthController', () => {
       };
 
       mockConfigService.get.mockReturnValue('http://localhost:3000');
+
+      // mock logger on controller
+      loggerErrorSpy = jest.fn();
+      (controller as any).logger = {
+        error: loggerErrorSpy,
+      };
     });
 
     it('should redirect to frontend callback with token on success', async () => {
@@ -175,6 +182,10 @@ describe('AuthController', () => {
       expect(mockResponse.redirect).toHaveBeenCalledWith(
         'http://localhost:3000/login?error=Database+connection+error',
       );
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        'GitHub OAuth callback failed: Database connection error',
+        expect.any(String),
+      );
     });
 
     it('should handle unknown error type', async () => {
@@ -187,6 +198,10 @@ describe('AuthController', () => {
 
       expect(mockResponse.redirect).toHaveBeenCalledWith(
         'http://localhost:3000/login?error=Unknown+error',
+      );
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        'GitHub OAuth callback failed: Unknown error',
+        undefined,
       );
     });
 

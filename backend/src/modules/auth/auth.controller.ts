@@ -6,6 +6,7 @@ import {
   Res,
   UseGuards,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import type { Response, Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
@@ -14,7 +15,7 @@ import { AuthService } from '@modules/auth/services/auth.service';
 import { JwtAuthGuard } from '@modules/auth/guards/jwt-auth.guard';
 import { validateJwtPayload } from '@modules/auth/guards/jwt-payload.guard';
 import { UserProfileDto } from '@modules/auth/dto/auth.dto';
-import { isUser, type User } from '@modules/auth/interfaces/user.interface';
+import { isUser } from '@modules/auth/interfaces/user.interface';
 import { FRONTEND_ROUTES, buildRedirectUrl } from '@common/constants';
 import { ResponseWrapper } from '@common/interfaces/api-response.interface';
 
@@ -24,10 +25,40 @@ import { ResponseWrapper } from '@common/interfaces/api-response.interface';
  */
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
   ) {}
+
+  private getFrontendUrl(): string {
+    return (
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000'
+    );
+  }
+
+  private redirectWithToken(res: Response, token: string): void {
+    const redirectUrl = buildRedirectUrl(
+      this.getFrontendUrl(),
+      FRONTEND_ROUTES.CALLBACK,
+      {
+        token,
+      },
+    );
+    res.redirect(redirectUrl);
+  }
+
+  private redirectWithError(res: Response, error: string): void {
+    const redirectUrl = buildRedirectUrl(
+      this.getFrontendUrl(),
+      FRONTEND_ROUTES.LOGIN,
+      {
+        error,
+      },
+    );
+    res.redirect(redirectUrl);
+  }
 
   /**
    * Bắt đầu OAuth flow với GitHub
@@ -36,7 +67,7 @@ export class AuthController {
   @Get('github')
   @UseGuards(AuthGuard('github'))
   async githubAuth(): Promise<void> {
-    // Passport sẽ xử lý redirect đến GitHub
+    // Guard Passport tự redirect sang GitHub, nên không cần xử lý ở đây
   }
 
   /**
@@ -61,26 +92,15 @@ export class AuthController {
       const loginResponse = await this.authService.login(user);
 
       // Chuyển hướng về frontend với token
-      const frontendUrl =
-        this.configService.get<string>('FRONTEND_URL') ||
-        'http://localhost:3000';
-      const redirectUrl = buildRedirectUrl(
-        frontendUrl,
-        FRONTEND_ROUTES.CALLBACK,
-        { token: loginResponse.accessToken },
-      );
-
-      res.redirect(redirectUrl);
+      this.redirectWithToken(res, loginResponse.accessToken);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      const frontendUrl =
-        this.configService.get<string>('FRONTEND_URL') ||
-        'http://localhost:3000';
-      const redirectUrl = buildRedirectUrl(frontendUrl, FRONTEND_ROUTES.LOGIN, {
-        error: errorMessage,
-      });
-      res.redirect(redirectUrl);
+      this.logger.error(
+        `GitHub OAuth callback failed: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      this.redirectWithError(res, errorMessage);
     }
   }
 
