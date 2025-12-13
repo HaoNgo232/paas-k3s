@@ -5,7 +5,8 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -48,6 +49,13 @@ enum ServiceTier {
   TEAM // Unlimited (future)
 }
 
+enum SpaceStatus {
+  PENDING // Đang tạo K3s resources
+  ACTIVE // Sẵn sàng sử dụng
+  PENDING_DELETE // Đang xóa K3s resources
+  ERROR // Tạo/xóa thất bại
+}
+
 // ==================== RESOURCE HIERARCHY ====================
 
 model Space {
@@ -64,6 +72,10 @@ model Space {
   cpuLimit     String @default("2") // Total CPU cores
   memoryLimit  String @default("2Gi") // Total memory
   storageLimit String @default("10Gi") // Total storage
+
+  // Status tracking for K3s operations
+  status        SpaceStatus @default(PENDING)
+  statusMessage String? // Error message if status = ERROR
 
   // Relations
   projects Project[]

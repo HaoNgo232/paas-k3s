@@ -8,23 +8,23 @@ description: Phân chia công việc thành các nhiệm vụ khả thi và ư�
 
 ## 📊 Tóm Tắt Tiến Độ
 
-**Trạng thái chung:** Chưa bắt đầu
+**Trạng thái chung:** Đang triển khai - Phase 1 hoàn thành, Phase 2 đang bắt đầu
 
 **Phụ thuộc đã hoàn thành:**
 
 - ✅ F01 - User Authentication (Backend 100%, Frontend pending)
 
-**Tiếp theo (Ưu tiên):**
+**Tiến độ hiện tại:**
 
-- 🔄 Phase 1: Thiết lập K3s Service
-- Phase 2: Backend Spaces Module
-- Phase 3: Frontend UI
+- ✅ Phase 1: Thiết lập K3s Service (100% - KubernetesService hoàn chỉnh với custom exceptions, type guards, path expansion)
+- 🔄 Phase 2: Backend Spaces Module (0% - cần implement)
+- ⏳ Phase 3: Frontend UI (0% - chưa bắt đầu)
 
 ## Các cột mốc
 
 **Các điểm kiểm tra chính là gì?**
 
-- [ ] **Milestone 1: K3s Integration Foundation** - KubernetesService hoạt động với K3s cluster, có thể tạo/xóa Namespace
+- [x] **Milestone 1: K3s Integration Foundation** - KubernetesService hoạt động với K3s cluster, có thể tạo/xóa Namespace (✅ Hoàn thành với custom exceptions, type guards, path expansion)
 - [ ] **Milestone 2: Backend Spaces API** - CRUD endpoints hoàn chỉnh với validation
 - [ ] **Milestone 3: Frontend Spaces UI** - List, Create, Delete UI hoàn chỉnh
 - [ ] **Milestone 4: End-to-End Testing** - Luồng tạo Space từ UI đến K3s hoạt động
@@ -33,74 +33,94 @@ description: Phân chia công việc thành các nhiệm vụ khả thi và ư�
 
 **Công việc cụ thể nào cần được thực hiện?**
 
-### Giai đoạn 1: K3s Service Foundation (2-3 giờ)
+### Giai đoạn 1: K3s Service Foundation (2-3 giờ) ✅ HOÀN THÀNH
 
-- [ ] **Task 1.1: Cài đặt Dependencies**
+- [x] **Task 1.1: Cài đặt Dependencies** ✅
 
-  - Cài đặt `@kubernetes/client-node`
-  - Cấu hình KUBECONFIG trong `.env`
+  - ✅ Cài đặt `@kubernetes/client-node`
+  - ✅ Cấu hình KUBECONFIG trong `.env` (với path expansion hỗ trợ `~`)
 
-- [ ] **Task 1.2: Triển khai KubernetesModule**
+- [x] **Task 1.2: Triển khai KubernetesModule** ✅
 
-  - Tạo `kubernetes.module.ts` (Global module)
-  - Export `KubernetesService`
+  - ✅ Tạo `kubernetes.module.ts` (Global module)
+  - ✅ Export `KubernetesService`
+  - ✅ Import vào AppModule
 
-- [ ] **Task 1.3: Triển khai KubernetesService Core**
+- [x] **Task 1.3: Triển khai KubernetesService Core** ✅
+
   ```typescript
-  // Các methods cần implement:
-  - getClient(): CoreV1Api  // K8s client
-  - createNamespace(name: string, labels: Record<string, string>)
-  - deleteNamespace(name: string)
-  - getNamespace(name: string)
-  - createResourceQuota(namespace: string, spec: ResourceQuotaSpec)
-  - getResourceQuotaUsage(namespace: string)
-  - createLimitRange(namespace: string, spec: LimitRangeSpec)
+  // Các methods đã implement:
+  ✅ getClient(): CoreV1Api  // K8s client với null safety
+  ✅ createNamespace(name: string, labels: Record<string, string>)
+  ✅ deleteNamespace(name: string) // với custom exceptions
+  ✅ getNamespace(name: string) // với type guards
+  ✅ namespaceExists(name: string) // với 404 handling
+  ✅ createResourceQuota(namespace: string, spec: ResourceQuotaSpec)
+  ✅ getResourceQuotaUsage(namespace: string) // với type guards
+  ✅ createLimitRange(namespace: string, limits: LimitRangeItem[])
   ```
 
-````
+  **Bonus đã thêm:**
 
-- [ ] **Task 1.4: Tạo Namespace Builder**
+  - ✅ Custom exceptions (K8sResourceNotFoundException, K8sResourceForbiddenException, etc.)
+  - ✅ Type guards cho K8s API responses
+  - ✅ Path expansion (`~` → home directory)
+  - ✅ Fallback to in-cluster config nếu file không tồn tại
+  - ✅ Error handling với proper exception mapping
+
+- [ ] **Task 1.4: Tạo Namespace Builder** ⏸️ DEFERRED
 
   - `builders/namespace.builder.ts`
   - Fluent API để build Namespace manifest
+  - **Note:** Hiện tại build manifest trực tiếp trong service, builder có thể thêm sau nếu cần
 
-- [ ] **Task 1.5: Tạo ResourceQuota Builder**
+- [ ] **Task 1.5: Tạo ResourceQuota Builder** ⏸️ DEFERRED
 
   - `builders/resource-quota.builder.ts`
   - Support các tier quotas (FREE, PRO, TEAM)
+  - **Note:** Hiện tại build spec trực tiếp, builder có thể thêm sau
 
-- [ ] **Task 1.6: Tạo LimitRange Builder**
+- [ ] **Task 1.6: Tạo LimitRange Builder** ⏸️ DEFERRED
 
   - `builders/limit-range.builder.ts`
   - Default container limits
+  - **Note:** Hiện tại build limits trực tiếp, builder có thể thêm sau
 
-- [ ] **Task 1.7: Unit Tests cho KubernetesService**
+- [ ] **Task 1.7: Unit Tests cho KubernetesService** ⏳ TODO
   - Mock `@kubernetes/client-node`
   - Test các scenarios: success, namespace already exists, deletion
+  - Test custom exceptions mapping
   - Note: K3s sử dụng Kubernetes API chuẩn nên client hoạt động giống hệt
 
-### Giai đoạn 2: Backend Spaces Module (3-4 giờ)
+### Giai đoạn 2: Backend Spaces Module (3-4 giờ) 🔄 ĐANG BẮT ĐẦU
 
-- [ ] **Task 2.1: Cập nhật Prisma Schema**
+- [x] **Task 2.1: Cập nhật Prisma Schema** ✅
 
-  - Thêm `status` và `statusMessage` vào model Space
-  - Tạo enum `SpaceStatus`
-  - Run `prisma migrate dev`
+  - ✅ Thêm enum `SpaceStatus` (PENDING, ACTIVE, PENDING_DELETE, ERROR)
+  - ✅ Thêm `status SpaceStatus @default(PENDING)` vào model Space
+  - ✅ Thêm `statusMessage String?` vào model Space
+  - ✅ Sync schema với database bằng `prisma db push`
+  - ✅ Generate Prisma client với types mới
 
-- [ ] **Task 2.2: Tạo SpacesModule Structure**
+- [x] **Task 2.2: Tạo SpacesModule Structure** ✅
 
   ```
   modules/spaces/
-  ├── spaces.module.ts
-  ├── spaces.controller.ts
-  ├── spaces.service.ts
+  ├── spaces.module.ts ✅
+  ├── spaces.controller.ts ✅ (CRUD endpoints với JwtAuthGuard)
+  ├── spaces.service.ts ✅ (stub methods, chưa implement logic)
   ├── dto/
-  │   ├── create-space.dto.ts
-  │   ├── update-space.dto.ts
-  │   └── space-response.dto.ts
+  │   ├── create-space.dto.ts ✅ (validation: name 3-50 chars, lowercase alphanumeric)
+  │   ├── update-space.dto.ts ✅ (all fields optional)
+  │   └── index.ts ✅
   └── interfaces/
-      └── space-quota.interface.ts
+      └── space-quota.interface.ts ✅ (SpaceQuotaUsage interface)
   ```
+
+  **Bonus:**
+
+  - ✅ Tạo User decorator (`@common/decorators/user.decorator.ts`) để extract JwtPayload từ request
+  - ✅ Import SpacesModule vào AppModule
 
 - [ ] **Task 2.3: Triển khai DTOs**
 
@@ -294,4 +314,7 @@ Feature được coi là hoàn thành khi:
 ```
 
 ```
-````
+
+```
+
+```

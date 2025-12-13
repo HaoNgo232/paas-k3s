@@ -24,7 +24,8 @@
       "@modules/*": ["modules/*"],
       "@common/*": ["common/*"],
       "@kubernetes/*": ["kubernetes/*"],
-      "@prisma/*": ["prisma/*"]
+      "@prisma/*": ["prisma/*"],
+      "@generated/*": ["generated/*"]
     }
   },
   "include": ["src/**/*", "test/**/*"],

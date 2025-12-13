@@ -1,6 +1,6 @@
 /**
  * Standard API Response Interface
- * 
+ *
  * CRITICAL: Frontend expects ALL API responses in this exact format
  * Global TransformInterceptor automatically wraps controller returns into this structure
  */
@@ -34,9 +34,7 @@ export function isApiResponse<T>(
 
   const obj = response as Record<string, unknown>;
   return (
-    'data' in obj &&
-    'statusCode' in obj &&
-    typeof obj.statusCode === 'number'
+    'data' in obj && 'statusCode' in obj && typeof obj.statusCode === 'number'
   );
 }
 

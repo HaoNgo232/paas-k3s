@@ -104,7 +104,7 @@ describe('AuthController', () => {
 
       // mock logger on controller
       loggerErrorSpy = jest.fn();
-      (controller as any).logger = {
+      (controller as unknown as { logger: { error: jest.Mock } }).logger = {
         error: loggerErrorSpy,
       };
     });

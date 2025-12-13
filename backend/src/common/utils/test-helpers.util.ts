@@ -3,12 +3,15 @@
  * Validate API responses in tests to catch format violations early
  */
 
-import { ApiResponse, isApiResponse } from '../interfaces/api-response.interface';
+import {
+  ApiResponse,
+  isApiResponse,
+} from '../interfaces/api-response.interface';
 
 /**
  * Assert that HTTP response matches standard ApiResponse format
  * Use in E2E tests to validate actual HTTP responses
- * 
+ *
  * @example
  * it('should return standard format', () => {
  *   return request(app.getHttpServer())
@@ -20,12 +23,12 @@ import { ApiResponse, isApiResponse } from '../interfaces/api-response.interface
 export function assertHttpResponseFormat(res: { body: unknown }): void {
   if (!isApiResponse(res.body)) {
     throw new Error(
-      `HTTP response does not match ApiResponse format. Got: ${JSON.stringify(res.body, null, 2)}`
+      `HTTP response does not match ApiResponse format. Got: ${JSON.stringify(res.body, null, 2)}`,
     );
   }
 
-  const response = res.body as ApiResponse<unknown>;
-  
+  const response = res.body;
+
   if (typeof response.statusCode !== 'number') {
     throw new Error('Response missing required "statusCode" property');
   }
@@ -43,7 +46,9 @@ export function assertHasData<T>(
   response: ApiResponse<T>,
 ): asserts response is ApiResponse<NonNullable<T>> {
   if (response.data === null || response.data === undefined) {
-    throw new Error('Expected response.data to be defined, but got null/undefined');
+    throw new Error(
+      'Expected response.data to be defined, but got null/undefined',
+    );
   }
 }
 
@@ -52,18 +57,20 @@ export function assertHasData<T>(
  */
 export function assertNoContent(response: ApiResponse<unknown>): void {
   if (response.data !== null) {
-    throw new Error(`Expected response.data to be null for no-content operation, but got: ${typeof response.data}`);
+    throw new Error(
+      `Expected response.data to be null for no-content operation, but got: ${typeof response.data}`,
+    );
   }
 }
 
 /**
  * Assert that response has pagination meta
  */
-export function assertHasPaginationMeta(
-  response: ApiResponse<unknown>,
-): void {
+export function assertHasPaginationMeta(response: ApiResponse<unknown>): void {
   if (!response.meta) {
-    throw new Error('Expected response.meta to be defined for paginated response');
+    throw new Error(
+      'Expected response.meta to be defined for paginated response',
+    );
   }
 
   const requiredFields = ['total', 'page', 'limit'];

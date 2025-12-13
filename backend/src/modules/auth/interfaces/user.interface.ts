@@ -1,4 +1,4 @@
-import { User, UserRole, ServiceTier } from '@prisma/client';
+import { User, ServiceTier, UserRole } from '@/generated/prisma/client';
 
 export { UserRole, ServiceTier };
 export type { User };
@@ -8,7 +8,10 @@ export type { User };
  * Prevents runtime errors when casting string to UserRole enum
  */
 export function isUserRole(value: unknown): value is UserRole {
-  return typeof value === 'string' && Object.values(UserRole).includes(value as UserRole);
+  return (
+    typeof value === 'string' &&
+    Object.values(UserRole).includes(value as UserRole)
+  );
 }
 
 /**

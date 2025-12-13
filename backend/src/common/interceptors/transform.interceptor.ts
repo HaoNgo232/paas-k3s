@@ -6,58 +6,66 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { ApiResponse, ResponseWrapper } from '../interfaces/api-response.interface';
+import {
+  ApiResponse,
+  ResponseWrapper,
+  isApiResponse,
+} from '@common/interfaces/api-response.interface';
 
 /**
  * Transform Interceptor
- * 
+ *
  * Tự động đóng gói TẤT CẢ các phản hồi từ controller vào một định dạng chuẩn: { data: T, statusCode: number }
- * 
+ *
  * Lợi ích:
  * - Các Controller có thể trả về dữ liệu trực tiếp (code sạch hơn)
  * - Ngăn chặn các định dạng phản hồi không nhất quán
  * - Frontend luôn nhận được cấu trúc mong đợi
  * - Không có cơ hội xảy ra lỗi do con người
- * 
+ *
  * Cách sử dụng trong Controllers:
  * return user;              // Tự động đóng gói thành { data: user, statusCode: 200 }
  * return users;             // Tự động đóng gói thành { data: users, statusCode: 200 }
  * return ResponseWrapper.success(data, 'Custom message');  // Kiểm soát thủ công
  */
 @Injectable()
-export class TransformInterceptor<T>
-  implements NestInterceptor<T, ApiResponse<T>>
-{
+export class TransformInterceptor<T> implements NestInterceptor<
+  T,
+  ApiResponse<T>
+> {
   intercept(
     context: ExecutionContext,
     next: CallHandler,
   ): Observable<ApiResponse<T>> {
-    const response = context.switchToHttp().getResponse();
+    const response = context
+      .switchToHttp()
+      .getResponse<{ statusCode?: number }>();
+    const statusCode = response?.statusCode ?? 200;
 
     return next.handle().pipe(
-      map((data) => {
+      map((data: T | ApiResponse<T> | ResponseWrapper<T>) => {
         // Handle ResponseWrapper for manual control
         if (data instanceof ResponseWrapper) {
           return {
             data: data.data,
             message: data.message,
-            statusCode: response.statusCode,
+            statusCode,
             meta: data.meta,
           };
         }
 
         // Handle already-wrapped responses (backward compatibility)
-        if (data && typeof data === 'object' && 'data' in data) {
+        if (isApiResponse<T>(data)) {
           return {
             ...data,
-            statusCode: response.statusCode,
+            statusCode,
           } as ApiResponse<T>;
         }
 
         // Default: Auto-wrap controller return value
         return {
           data,
-          statusCode: response.statusCode,
+          statusCode,
         };
       }),
     );
