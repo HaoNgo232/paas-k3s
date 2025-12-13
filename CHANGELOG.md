@@ -9,6 +9,47 @@ và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- **Space Management Feature (F02) - Backend Foundation**:
+  - Triển khai `SpacesModule` với CRUD endpoints (`POST /spaces`, `GET /spaces`, `GET /spaces/:id`, `PATCH /spaces/:id`, `DELETE /spaces/:id`, `GET /spaces/:id/quota`).
+  - Thêm `CreateSpaceDto` và `UpdateSpaceDto` với validation (name pattern `^[a-z][a-z0-9-]*$`, length 3-50).
+  - Thêm `SpaceStatus` enum (PENDING, ACTIVE, PENDING_DELETE, ERROR) vào Prisma schema.
+  - Thêm `status` và `statusMessage` fields vào Space model để track K3s operations.
+  - Tạo `User` decorator (`@common/decorators/user.decorator.ts`) để extract JwtPayload từ request.
+  - Thêm `SpaceQuotaUsage` interface cho quota tracking.
+  - Import `AuthModule` vào `SpacesModule` để resolve JwtService dependency cho JwtAuthGuard.
+- **Kubernetes/K3s Integration**:
+  - Triển khai `KubernetesModule` (Global module) với `KubernetesService`.
+  - Thêm methods: `createNamespace()`, `deleteNamespace()`, `namespaceExists()`, `getNamespace()`.
+  - Thêm ResourceQuota operations: `createResourceQuota()`, `getResourceQuotaUsage()`.
+  - Thêm LimitRange operations: `createLimitRange()`.
+  - Custom exceptions: `K8sResourceNotFoundException`, `K8sResourceForbiddenException`, `K8sResourceConflictException`, `K8sInternalException`.
+  - Type guards cho K8s API responses (`isNamespaceResponse`, etc.).
+  - Path expansion utility (`expandPath()`) hỗ trợ `~` và `$HOME` trong KUBECONFIG.
+  - Fallback to in-cluster config nếu file không tồn tại.
+- **Prisma 7.x Configuration**:
+  - Cấu hình Prisma 7.x với `@prisma/adapter-pg` và `pg` driver adapter.
+  - Update `PrismaService` để sử dụng `PrismaPg` adapter pattern theo official documentation.
+  - Generate Prisma Client với CommonJS format (không cần `type: "module"`).
+  - Import paths sử dụng relative paths với generated client (`../generated/prisma/client`).
+
+### Changed
+
+- **TypeScript Configuration**:
+  - Chuyển từ ESM (`module: "nodenext"`) về CommonJS (`module: "commonjs"`) để tương thích với NestJS và Prisma 7.x.
+  - Update `moduleResolution` từ `nodenext` về `node`.
+  - Xóa `"type": "module"` khỏi `package.json` (NestJS thường dùng CommonJS).
+- **Prisma Schema**:
+  - Update generator từ `prisma-client-js` sang `prisma-client` với custom output path (`../src/generated/prisma`).
+  - Thêm `SpaceStatus` enum và status tracking fields.
+- **Module Dependencies**:
+  - Import `AuthModule` vào `SpacesModule` để resolve `JwtService` dependency cho `JwtAuthGuard`.
+
+### Fixed
+
+- **Dependency Injection**: Fix `UnknownDependenciesException` trong `SpacesModule` bằng cách import `AuthModule` để resolve `JwtService` cho `JwtAuthGuard`.
+- **Prisma Client Generation**: Fix ESM/CommonJS module resolution conflicts bằng cách chuyển về CommonJS và cấu hình Prisma adapter đúng cách.
+- **Type Safety**: Fix unsafe type assignments và error types bằng cách sử dụng proper imports từ generated Prisma client.
+
 - **UI/UX Design System**:
   - Tạo tài liệu hướng dẫn thiết kế (`docs/design/UI_UX_Guidelines.md`).
   - Triển khai "Deep Space Glass" theme - Dark mode chuyên nghiệp cho developer platform.
@@ -26,6 +67,9 @@ và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
+- **Backend Architecture**:
+  - Cấu hình Prisma 7.x với driver adapter pattern thay vì legacy `prisma-client-js`.
+  - Chuyển TypeScript module system từ ESM về CommonJS để tương thích với NestJS và Prisma 7.x.
 - **Cấu trúc Frontend**: Tái cấu trúc thành Feature-based Architecture.
   - Di chuyển `app` và `lib` vào `src/`.
   - Tạo các thư mục chuẩn: `features/`, `components/` (ui, layout, common), `hooks/`, `types/`, `styles/`.

@@ -17,7 +17,7 @@ description: Phân chia công việc thành các nhiệm vụ khả thi và ư�
 **Tiến độ hiện tại:**
 
 - ✅ Phase 1: Thiết lập K3s Service (100% - KubernetesService hoàn chỉnh với custom exceptions, type guards, path expansion)
-- 🔄 Phase 2: Backend Spaces Module (0% - cần implement)
+- 🔄 Phase 2: Backend Spaces Module (40% - Structure hoàn thành, đang implement business logic)
 - ⏳ Phase 3: Frontend UI (0% - chưa bắt đầu)
 
 ## Các cột mốc
@@ -92,7 +92,7 @@ description: Phân chia công việc thành các nhiệm vụ khả thi và ư�
   - Test custom exceptions mapping
   - Note: K3s sử dụng Kubernetes API chuẩn nên client hoạt động giống hệt
 
-### Giai đoạn 2: Backend Spaces Module (3-4 giờ) 🔄 ĐANG BẮT ĐẦU
+### Giai đoạn 2: Backend Spaces Module (3-4 giờ) 🔄 ĐANG TRIỂN KHAI (40%)
 
 - [x] **Task 2.1: Cập nhật Prisma Schema** ✅
 
@@ -121,38 +121,51 @@ description: Phân chia công việc thành các nhiệm vụ khả thi và ư�
 
   - ✅ Tạo User decorator (`@common/decorators/user.decorator.ts`) để extract JwtPayload từ request
   - ✅ Import SpacesModule vào AppModule
+  - ✅ Import AuthModule vào SpacesModule để resolve JwtService dependency cho JwtAuthGuard
 
-- [ ] **Task 2.3: Triển khai DTOs**
+- [x] **Task 2.3: Triển khai DTOs** ✅
 
-  - `CreateSpaceDto`: name (required), description (optional)
-  - `UpdateSpaceDto`: name, description (all optional)
-  - Validation: name pattern `^[a-z][a-z0-9-]*$`, length 3-50
+  - ✅ `CreateSpaceDto`: name (required), description (optional)
+  - ✅ `UpdateSpaceDto`: name, description (all optional)
+  - ✅ Validation: name pattern `^[a-z][a-z0-9-]*$`, length 3-50
+  - ✅ Sử dụng `@IsDefined()`, `@IsString()`, `@Length()`, `@Matches()` decorators
+  - ✅ Export qua `dto/index.ts`
 
-- [ ] **Task 2.4: Triển khai SpacesService**
+- [ ] **Task 2.4: Triển khai SpacesService** 🔄 IN PROGRESS
 
-  - `create()`: Validate quota, create DB record, create K3s resources
-  - `findAll()`: List user's spaces with projectCount
-  - `findOne()`: Get space detail
-  - `update()`: Update name/description
-  - `remove()`: Check no projects, delete K3s resources, delete DB record
-  - `getQuotaUsage()`: Get quota from K3s API
+  - [ ] `create()`: Validate quota, create DB record, create K3s resources
+  - [ ] `findAll()`: List user's spaces with projectCount
+  - [ ] `findOne()`: Get space detail
+  - [ ] `update()`: Update name/description
+  - [ ] `remove()`: Check no projects, delete K3s resources, delete DB record
+  - [ ] `getQuotaUsage()`: Get quota from K3s API
+  - **Status:** Stub methods đã có, cần implement logic
+  - **Dependencies:** Cần Task 2.6 (Slug Utility) và Task 2.7 (Tier Quota Config) trước
 
-- [ ] **Task 2.5: Triển khai SpacesController**
+- [x] **Task 2.5: Triển khai SpacesController** ✅
 
-  - CRUD endpoints với proper decorators
-  - `@UseGuards(JwtAuthGuard)`
-  - `@User()` decorator để lấy current user
+  - ✅ CRUD endpoints với proper decorators
+  - ✅ `@UseGuards(JwtAuthGuard)` ở controller level
+  - ✅ `@User()` decorator để lấy JwtPayload từ request
+  - ✅ Tất cả endpoints: POST, GET, GET/:id, PATCH/:id, DELETE/:id, GET/:id/quota
+  - ✅ Response format theo chuẩn: `{ data: ... }` hoặc `{ data: ..., meta: ... }`
+  - ✅ Import AuthModule vào SpacesModule để resolve JwtService dependency
+  - **Note:** Controller structure hoàn chỉnh, đang chờ SpacesService implementation
 
-- [ ] **Task 2.6: Tạo Slug Utility**
+- [ ] **Task 2.6: Tạo Slug Utility** ⏳ TODO
 
   - `generateSpaceSlug(userId: string, spaceName: string): string`
   - Format: `space-{userId-prefix}-{spaceName}`
   - Đảm bảo <= 63 chars (Kubernetes/K3s namespace limit)
+  - **Location:** `backend/src/common/utils/slug.util.ts`
+  - **Priority:** High - cần cho Task 2.4
 
-- [ ] **Task 2.7: Tạo Tier Quota Config**
+- [ ] **Task 2.7: Tạo Tier Quota Config** ⏳ TODO
 
   - `config/tier-quotas.config.ts`
   - Define quotas cho FREE, PRO, TEAM
+  - **Location:** `backend/src/config/tier-quotas.config.ts`
+  - **Priority:** High - cần cho Task 2.4
 
 - [ ] **Task 2.8: Unit Tests cho SpacesService**
 
